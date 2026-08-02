@@ -1,0 +1,8 @@
+{
+  "name": "nvocc-crm",
+  "version": "1.0.0",
+  "description": "Shipment-intake CRM for an NVOCC / freight forwarder (barrels flat-rate, boxes by volume). Zero dependencies.",
+  "engines": { "node": ">=22.5.0" },
+  "scripts": { "start": "node server.js" },
+  "license": "MIT"
+}

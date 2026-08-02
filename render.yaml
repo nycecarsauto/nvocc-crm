@@ -1,0 +1,19 @@
+# One-click deploy config for Render (https://render.com)
+# In Render: New → Blueprint → connect the repo containing this file.
+services:
+  - type: web
+    name: nvocc-crm
+    runtime: docker
+    plan: starter            # ~$7/mo; gives a persistent disk. Use 'free' to trial (no disk).
+    healthCheckPath: /
+    envVars:
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASS
+        generateValue: true   # Render generates a strong password; view it in the dashboard
+      - key: NVOCC_DB
+        value: /data/nvocc.db
+    disk:
+      name: nvocc-data
+      mountPath: /data
+      sizeGB: 1

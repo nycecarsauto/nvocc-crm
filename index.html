@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NVOCC Freight CRM</title>
+<style>
+  :root{--bg:#0f172a;--panel:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--brand:#0d6efd;--accent:#0891b2;--warn:#b45309;--chip:#f1f5f9;--shadow:0 1px 3px rgba(15,23,42,.08),0 8px 24px rgba(15,23,42,.06);}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#f4f6fb}
+  header{background:var(--bg);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+  header .logo{font-weight:700;letter-spacing:.3px;font-size:18px;display:flex;align-items:center;gap:9px}
+  header .logo .badge{background:var(--brand);border-radius:7px;padding:3px 8px;font-size:12px}
+  nav{display:flex;gap:4px;margin-left:8px;flex-wrap:wrap}
+  nav button{background:transparent;color:#cbd5e1;border:0;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500}
+  nav button:hover{background:#1e293b;color:#fff} nav button.active{background:var(--brand);color:#fff}
+  .spacer{flex:1}
+  .whoami{color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:10px}
+  .whoami .role{background:#1e293b;padding:2px 8px;border-radius:6px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .whoami button{background:#1e293b;color:#cbd5e1;border:0;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px}
+  .whoami button:hover{color:#fff}
+  main{max-width:1120px;margin:22px auto;padding:0 18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-bottom:18px}
+  h2{margin:2px 0 4px;font-size:20px} h3{margin:0 0 12px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .grid{display:grid;gap:12px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+  @media(max-width:720px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px}
+  input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:2px solid #bfdbfe;border-color:var(--brand)}
+  textarea{resize:vertical;min-height:64px}
+  .btn{border:0;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  .btn.primary{background:var(--brand);color:#fff}.btn.ghost{background:var(--chip);color:var(--ink)}.btn.sm{padding:6px 11px;font-size:13px}.btn.danger{background:#fee2e2;color:#b91c1c}
+  .btn:hover{filter:brightness(.97)}
+  .row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .items-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden}.items-scroll{max-height:360px;overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{position:sticky;top:0;background:#f8fafc;text-align:left;padding:10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--line);z-index:2}
+  tbody td{padding:7px 8px;border-bottom:1px solid #eef2f7;vertical-align:middle} tbody tr:hover{background:#fafcff}
+  td input,td select{padding:7px 8px;font-size:13px}.cell-sm{width:74px}.cell-xs{width:58px}
+  .type-barrel{border-left:3px solid var(--warn)}.type-box{border-left:3px solid var(--brand)}.type-other{border-left:3px solid var(--accent)}
+  .muted{color:var(--muted)}
+  .totchip{display:inline-flex;flex-direction:column;background:var(--chip);border-radius:11px;padding:10px 16px;min-width:120px}
+  .totchip b{font-size:20px}.totchip span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .totals{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+  .pill.Draft{background:#f1f5f9;color:#475569}.pill.Booked{background:#dbeafe;color:#1d4ed8}.pill.Shipped{background:#dcfce7;color:#15803d}.pill.Delivered{background:#e9d5ff;color:#7e22ce}
+  .list-table td,.list-table th{padding:11px 12px}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  .flash{position:fixed;bottom:22px;right:22px;background:#111827;color:#fff;padding:12px 18px;border-radius:10px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.25s;z-index:60}
+  .flash.show{opacity:1;transform:none}.flash.err{background:#b91c1c}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:3px}.divider{height:1px;background:var(--line);margin:18px 0}.barreldim{opacity:.45}
+  /* auth screen */
+  .authwrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a,#1e3a8a);padding:20px}
+  .authcard{background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:420px;padding:30px}
+  .authcard .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;margin-bottom:4px}
+  .authcard .brand .badge{background:var(--brand);color:#fff;border-radius:8px;padding:4px 9px;font-size:13px}
+  .tabs{display:flex;gap:6px;margin:18px 0}.tabs button{flex:1;padding:9px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;font-weight:600;color:var(--muted)}
+  .tabs button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+  /* labels / print */
+  .label-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .labels-area{display:flex;flex-wrap:wrap;gap:10px}
+  .label{width:4in;height:6in;border:1px dashed #cbd5e1;border-radius:8px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;background:#fff;page-break-inside:avoid;break-inside:avoid}
+  .label .l-top{font-size:13px}.label .l-co{font-size:22px;font-weight:800;line-height:1.1;margin:6px 0}
+  .label .l-meta{font-size:12px;color:#334155}.label .l-bc{text-align:center}.label .l-bc svg{max-width:100%;height:auto}
+  .label .l-piece{font-weight:700;font-size:14px}
+  body.print-a4 .label{width:3.5in;height:2.4in}
+  @media print{
+    header,.label-toolbar,.flash{display:none!important}
+    main{margin:0;max-width:none;padding:0}
+    .labels-area{gap:0}
+    .label{border:none;border-radius:0;margin:0}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="flash" id="flash"></div>
+<style id="pagestyle"></style>
+<script src="barcode.js"></script>
+<script>
+/* ================= helpers ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const el=(t,a={},kids=[])=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='class')n.className=v;else if(k==='html')n.innerHTML=v;else if(k.startsWith('on'))n.addEventListener(k.slice(2),v);else if(v!=null)n.setAttribute(k,v);}for(const c of [].concat(kids))if(c!=null)n.append(c.nodeType?c:document.createTextNode(c));return n;};
+const api=async(url,opts={})=>{const r=await fetch(url,{headers:{'Content-Type':'application/json'},credentials:'same-origin',...opts});if(r.status===401){ME=null;renderAuth();throw new Error('Please sign in');}if(!r.ok){const e=await r.json().catch(()=>({error:r.statusText}));throw new Error(e.error||'Request failed');}return r.json();};
+let settings={default_barrel_rate:75,default_volume_rate:8,currency:'USD'};
+const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:settings.currency||'USD'}).format(Number(n)||0);
+const flash=(m,err=false)=>{const f=$('#flash');f.textContent=m;f.className='flash show'+(err?' err':'');setTimeout(()=>f.className='flash',2400);};
+let ME=null,clients=[];
+const isStaff=()=>ME&&ME.user.role==='staff';
+
+/* ================= pricing ================= */
+function volumeEach(it){const l=+it.length||0,w=+it.width||0,h=+it.height||0;if(l<=0||w<=0||h<=0)return{v:0,unit:it.dim_unit==='cm'?'CBM':'ft3'};return it.dim_unit==='cm'?{v:(l*w*h)/1e6,unit:'CBM'}:{v:(l*w*h)/1728,unit:'ft3'};}
+function priceRow(it){const qty=Math.max(0,Math.min(100,+it.quantity||0));const rate=+it.rate||0;if(it.pricing_mode==='volume'){const{v,unit}=volumeEach(it);return{volume:+v.toFixed(2),unit,charge:+(rate*v*qty).toFixed(2)};}return{volume:0,unit:it.dim_unit==='cm'?'CBM':'ft3',charge:+(rate*qty).toFixed(2)};}
+
+/* ================= boot ================= */
+async function boot(){
+  try{const r=await api('/api/me');ME=r.user?r:null;}catch(e){ME=null;}
+  if(!ME){renderAuth();return;}
+  try{settings=await api('/api/settings');}catch(e){}
+  if(isStaff()){try{clients=await api('/api/clients');}catch(e){}}
+  renderApp();
+}
+
+/* ================= auth screen ================= */
+function renderAuth(mode='login'){
+  document.body.className='';
+  const root=$('#root');root.innerHTML='';
+  const F={};
+  const field=(k,label,type='text')=>{const i=el('input',{type,autocomplete:'off'});F[k]=i;return el('div',{style:'margin-bottom:10px'},[el('label',{},label),i]);};
+  // Build ONLY the active form so F maps to the inputs actually on screen.
+  const body=el('div',{});
+  if(mode==='login'){
+    body.append(el('div',{},[field('username','Username'),field('password','Password','password'),
+      el('button',{class:'btn primary',style:'width:100%;margin-top:6px',onclick:doLogin},'Sign in')]));
+  }else{
+    body.append(el('div',{},[
+      el('div',{class:'grid g2'},[field('name','Full name'),field('phone','Phone')]),
+      field('email','Email','email'),
+      el('div',{class:'grid g2'},[field('username','Choose a username'),field('password','Choose a password','password')]),
+      el('button',{class:'btn primary',style:'width:100%;margin-top:6px',onclick:doRegister},'Create account'),
+    ]));
+  }
+  const tabs=el('div',{class:'tabs'},[
+    el('button',{class:mode==='login'?'active':'',onclick:()=>renderAuth('login')},'Sign in'),
+    el('button',{class:mode==='register'?'active':'',onclick:()=>renderAuth('register')},'New customer'),
+  ]);
+  root.append(el('div',{class:'authwrap'},[el('div',{class:'authcard'},[
+    el('div',{class:'brand'},[el('span',{class:'badge'},'NVOCC'),'Freight CRM']),
+    el('p',{class:'sub'},mode==='login'?'Sign in to manage or track your shipments.':'Register to book and track your shipments.'),
+    tabs, body,
+    el('p',{class:'hint',style:'margin-top:14px'},mode==='login'?'Customers: use “New customer” to register. Staff: use the login your office set up.':'Already have an account? Choose “Sign in”.'),
+  ])]));
+  async function doLogin(){try{const r=await api('/api/login',{method:'POST',body:JSON.stringify({username:F.username.value,password:F.password.value})});await boot();flash('Welcome back');}catch(e){flash(e.message,true);}}
+  async function doRegister(){try{await api('/api/register',{method:'POST',body:JSON.stringify({username:F.username.value,password:F.password.value,name:F.name.value,phone:F.phone.value,email:F.email.value})});await boot();flash('Account created');}catch(e){flash(e.message,true);}}
+}
+
+/* ================= app shell ================= */
+const views={};
+function navItems(){return isStaff()
+  ?[['dash','Dashboard'],['intake','New Shipment'],['shipments','Shipments'],['clients','Clients'],['accounts','Accounts'],['settings','Settings']]
+  :[['dash','Dashboard'],['intake','New Shipment'],['shipments','My Shipments'],['profile','My Profile']];}
+function renderApp(){
+  document.body.className='';
+  const root=$('#root');root.innerHTML='';
+  const nav=el('nav',{id:'nav'},navItems().map(([v,l])=>el('button',{'data-view':v},l)));
+  nav.addEventListener('click',e=>{if(e.target.dataset.view)go(e.target.dataset.view);});
+  const header=el('header',{},[
+    el('div',{class:'logo'},[el('span',{class:'badge'},'NVOCC'),'Freight CRM']),nav,el('div',{class:'spacer'}),
+    el('div',{class:'whoami'},[el('span',{class:'role'},ME.user.role),ME.user.name||ME.user.username,
+      el('button',{onclick:doLogout},'Sign out')]),
+  ]);
+  root.append(header,el('main',{id:'app'}));
+  go('dash');
+}
+function go(view,arg){const nav=$('#nav');if(nav)[...nav.children].forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+  document.body.className='';$('#pagestyle').textContent='';$('#app').innerHTML='';(views[view]||views.dash)(arg);}
+async function doLogout(){try{await api('/api/logout',{method:'POST'});}catch(e){}ME=null;renderAuth();}
+
+/* ================= dashboard ================= */
+views.dash=async()=>{const app=$('#app');
+  const stats=await api('/api/stats').catch(()=>({clients:0,shipments:0,pieces:0,revenue:0}));
+  const cards=isStaff()
+    ?[stat('Clients',stats.clients),stat('Shipments',stats.shipments),stat('Total pieces',stats.pieces),stat('Booked revenue',money(stats.revenue))]
+    :[stat('My shipments',stats.shipments),stat('My pieces',stats.pieces),stat('My charges',money(stats.revenue))];
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},isStaff()?'Dashboard':`Welcome, ${ME.user.name||ME.user.username}`),
+    el('p',{class:'sub'},isStaff()?'Overview of your freight operations':'Your shipments at a glance')]),
+    el('button',{class:'btn primary',onclick:()=>go('intake')},'+ New Shipment')]),
+    el('div',{class:'grid '+(isStaff()?'g4':'g3')},cards));
+  const ships=await api('/api/shipments').catch(()=>[]);
+  app.append(el('div',{class:'card'},[el('h3',{},isStaff()?'Recent shipments':'My recent shipments'),shipTable(ships.slice(0,8))]));};
+const stat=(l,v)=>el('div',{class:'card',style:'text-align:center'},[el('div',{style:'font-size:30px;font-weight:800'},String(v)),el('div',{class:'muted',style:'font-size:12px;text-transform:uppercase;letter-spacing:.6px'},l)]);
+
+/* ================= intake ================= */
+views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.stringify(shipment)):{status:'Draft',items:[]};const editing=!!s.id;const staff=isStaff();
+  const mine=!staff; const form=el('div',{});
+  form.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},editing?`Edit Shipment #${s.id}`:'New Shipment Intake'),
+    el('p',{class:'sub'},'Capture the shipper, consignee, tracking details and every barrel / box being sent.')]),
+    el('div',{class:'row-actions'},[
+      editing?el('button',{class:'btn ghost',onclick:()=>openLabels(s.id)},'🏷 Print labels'):null,
+      editing&&(staff||mine)?el('button',{class:'btn danger',onclick:()=>delShipment(s.id)},'Delete'):null,
+      el('button',{class:'btn ghost',onclick:()=>go('shipments')},'Cancel'),
+      el('button',{class:'btn primary',onclick:doSave},'Save shipment')])]));
+  const F={};
+  const field=(name,label,opts={})=>{const input=opts.type==='textarea'?el('textarea',{}):opts.options?el('select',{},opts.options.map(o=>el('option',{value:o},o))):el('input',{type:opts.type||'text',placeholder:opts.ph||''});F[name]=input;if(s[name]!=null)input.value=s[name];if(opts.ro)input.setAttribute('disabled','');return el('div',{},[el('label',{},label),input,opts.hint?el('div',{class:'hint'},opts.hint):null]);};
+
+  // staff: client link + owner; customer: prefilled shipper from profile
+  if(staff){
+    const clientSel=el('select',{},[el('option',{value:''},'— New / walk-in —'),...clients.map(c=>el('option',{value:c.id},`${c.name}${c.phone?' · '+c.phone:''}`))]);
+    if(s.owner_client_id)clientSel.value=s.owner_client_id; else if(s.client_id)clientSel.value=s.client_id;
+    clientSel.addEventListener('change',()=>{const c=clients.find(x=>x.id==clientSel.value);if(!c)return;F.shipper_name.value=c.name||'';F.shipper_phone.value=c.phone||'';F.shipper_email.value=c.email||'';F.shipper_id.value=c.id_number||'';F.from_address.value=[c.address,c.city,c.country].filter(Boolean).join(', ');});
+    F._client=clientSel;
+    form.append(el('div',{class:'card'},[el('h3',{},'Client (owner of this shipment)'),el('div',{class:'grid g2'},[el('div',{},[el('label',{},'Assign to client'),clientSel]),el('div',{style:'align-self:end'},[el('button',{class:'btn ghost sm',onclick:()=>saveShipperAsClient(F,clientSel)},'＋ Save shipper as new client')])])]));
+  } else if(!editing && ME.client){
+    const c=ME.client;s.shipper_name=s.shipper_name||c.name;s.shipper_phone=s.shipper_phone||c.phone;s.shipper_email=s.shipper_email||c.email;s.shipper_id=s.shipper_id||c.id_number;s.from_address=s.from_address||[c.address,c.city,c.country].filter(Boolean).join(', ');
+  }
+
+  form.append(el('div',{class:'grid g2'},[
+    el('div',{class:'card type-barrel'},[el('h3',{},'Shipper — FROM'),field('shipper_name','Full name',{ph:'John Brown'}),
+      el('div',{class:'grid g2'},[field('shipper_phone','Phone',{type:'tel'}),field('shipper_email','Email',{type:'email'})]),
+      field('shipper_id','ID / Passport #'),field('from_address','Pickup / origin address',{type:'textarea',ph:'Street, city, state, country'})]),
+    el('div',{class:'card type-box'},[el('h3',{},'Consignee — TO'),field('consignee_name','Full name'),
+      el('div',{class:'grid g2'},[field('consignee_phone','Phone',{type:'tel'}),field('consignee_email','Email',{type:'email'})]),
+      field('consignee_id','ID / Passport #'),field('to_address','Delivery / destination address',{type:'textarea',ph:'Street, city, country'})])]));
+
+  const trackFields=[field('bl_number','BL / Booking #',{ro:mine}),field('ship_date','Ship date',{type:'date',ro:mine}),
+    staff?field('status','Status',{options:['Draft','Booked','Shipped','Delivered']}):statusReadonly(s.status),
+    field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown'}),field('carrier','Carrier / line',{ro:mine}),
+    field('vessel','Vessel / voyage',{ro:mine}),field('container_number','Container #',{ro:mine})];
+  form.append(el('div',{class:'card'},[el('h3',{},'Shipment & tracking'),el('div',{class:'grid g3'},trackFields),
+    mine?el('p',{class:'hint'},'Tracking details and status are filled in by the shipping office after you book.'):null,
+    field('notes','Notes',{type:'textarea'})]));
+
+  // items
+  const tbody=el('tbody');const totalsBar=el('div',{class:'totals'});const itemsState=[];
+  function addItem(type){itemsState.push(type==='barrel'?{item_type:'barrel',pricing_mode:'flat',rate:settings.default_barrel_rate,dim_unit:'in',weight_unit:'lb',quantity:1}:{item_type:type,pricing_mode:'volume',rate:settings.default_volume_rate,dim_unit:'in',weight_unit:'lb',quantity:1});renderItems();}
+  function renderItems(){tbody.innerHTML='';itemsState.forEach((it,idx)=>tbody.append(itemRow(it,idx)));recompute();}
+  function itemRow(it,idx){const isFlat=it.pricing_mode==='flat';
+    const bind=(key,attrs={})=>{const inp=el('input',{value:it[key]??'',...attrs});inp.addEventListener('input',()=>{it[key]=inp.value;if(['length','width','height','rate','quantity','dim_unit'].includes(key))recompute();});return inp;};
+    const typeSel=el('select',{},['barrel','box','other'].map(t=>el('option',{value:t,selected:t===it.item_type?'selected':null},t)));
+    typeSel.addEventListener('change',()=>{it.item_type=typeSel.value;it.pricing_mode=typeSel.value==='barrel'?'flat':'volume';it.rate=typeSel.value==='barrel'?settings.default_barrel_rate:settings.default_volume_rate;renderItems();});
+    const unitSel=el('select',{},['in','cm'].map(u=>el('option',{value:u,selected:u===it.dim_unit?'selected':null},u)));
+    unitSel.addEventListener('change',()=>{it.dim_unit=unitSel.value;recompute();});
+    const p=priceRow(it);const dc=isFlat?'barreldim':'';
+    return el('tr',{class:'type-'+(it.item_type==='barrel'?'barrel':it.item_type==='box'?'box':'other')},[
+      el('td',{},typeSel),el('td',{},bind('description',{placeholder:it.item_type==='barrel'?'Barrel contents':'Box contents',style:'width:150px'})),
+      el('td',{},bind('quantity',{type:'number',min:1,max:100,class:'cell-xs'})),
+      el('td',{class:dc},bind('length',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'L'})),
+      el('td',{class:dc},bind('width',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'W'})),
+      el('td',{class:dc},bind('height',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'H'})),
+      el('td',{class:dc},unitSel),el('td',{},el('span',{class:'muted'},isFlat?'flat':`${p.volume} ${p.unit}`)),
+      el('td',{},bind('weight',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'ea'})),
+      el('td',{},bind('declared_value',{type:'number',min:0,step:'0.01',class:'cell-sm',placeholder:'$ ea'})),
+      el('td',{},bind('rate',{type:'number',min:0,step:'0.01',class:'cell-sm'})),
+      el('td',{},el('b',{'data-charge':idx},money(p.charge))),
+      el('td',{},el('button',{class:'btn danger sm',onclick:()=>{itemsState.splice(idx,1);renderItems();}},'✕'))]);}
+  function recompute(){let pieces=0,weight=0,value=0,charge=0;itemsState.forEach((it,idx)=>{const p=priceRow(it);const q=Math.max(0,Math.min(100,+it.quantity||0));pieces+=q;weight+=(+it.weight||0)*q;value+=(+it.declared_value||0)*q;charge+=p.charge;const cell=tbody.querySelector(`[data-charge="${idx}"]`);if(cell)cell.textContent=money(p.charge);});totalsBar.innerHTML='';totalsBar.append(chip('Pieces',pieces),chip('Weight',weight.toFixed(1)),chip('Declared value',money(value)),chip('Total charge',money(charge)));}
+  const chip=(l,v)=>el('div',{class:'totchip'},[el('b',{},String(v)),el('span',{},l)]);
+  (s.items||[]).forEach(it=>itemsState.push({...it}));
+  form.append(el('div',{class:'card'},[el('div',{class:'toolbar'},[el('h3',{style:'margin:0'},'Items being sent'),
+    el('div',{class:'row-actions'},[el('button',{class:'btn ghost sm',onclick:()=>addItem('barrel')},'＋ Barrel'),el('button',{class:'btn ghost sm',onclick:()=>addItem('box')},'＋ Box'),el('button',{class:'btn ghost sm',onclick:()=>addItem('other')},'＋ Other')])]),
+    el('p',{class:'hint',style:'margin-top:-4px'},'Barrels are priced at a flat rate each. Boxes / other are priced by volume (L×W×H → ft³ for inches, CBM for cm). Quantity 1–100 per line.'),
+    el('div',{class:'items-wrap'},[el('div',{class:'items-scroll'},[el('table',{},[el('thead',{},el('tr',{},['Type','Description','Qty','L','W','H','Unit','Volume','Wt (ea)','Value (ea)','Rate','Line charge',''].map(h=>el('th',{},h)))),tbody])])]),totalsBar]));
+  renderItems();app.append(form);
+
+  function statusReadonly(v){return el('div',{},[el('label',{},'Status'),el('div',{style:'padding-top:4px'},[el('span',{class:'pill '+(v||'Draft')},v||'Draft')])]);}
+  async function doSave(){const payload={};
+    ['shipper_name','shipper_phone','shipper_email','shipper_id','from_address','consignee_name','consignee_phone','consignee_email','consignee_id','to_address','bl_number','ship_date','dest_port','carrier','vessel','container_number','notes'].forEach(k=>payload[k]=F[k]?F[k].value:(s[k]??null));
+    if(staff){payload.status=F.status?F.status.value:'Draft';payload.client_id=F._client&&F._client.value?Number(F._client.value):null;payload.owner_client_id=payload.client_id;}
+    payload.items=itemsState;
+    if(!payload.shipper_name&&!payload.consignee_name){flash('Add a shipper or consignee name',true);return;}
+    try{const saved=editing?await api('/api/shipments/'+s.id,{method:'PUT',body:JSON.stringify(payload)}):await api('/api/shipments',{method:'POST',body:JSON.stringify(payload)});flash('Shipment #'+saved.id+' saved · '+money(saved.total_charge));go('shipments');}catch(e){flash(e.message,true);}}
+};
+async function saveShipperAsClient(F,sel){const name=(F.shipper_name.value||'').trim();if(!name){flash('Enter the shipper name first',true);return;}try{const c=await api('/api/clients',{method:'POST',body:JSON.stringify({name,phone:F.shipper_phone.value,email:F.shipper_email.value,id_number:F.shipper_id.value,address:F.from_address.value})});clients.push(c);if(sel){sel.append(el('option',{value:c.id},c.name));sel.value=c.id;}flash('Saved '+name+' to clients');}catch(e){flash(e.message,true);}}
+async function delShipment(id){if(!confirm('Delete this shipment? This cannot be undone.'))return;try{await api('/api/shipments/'+id,{method:'DELETE'});flash('Shipment deleted');go('shipments');}catch(e){flash(e.message,true);}}
+
+/* ================= shipments list ================= */
+views.shipments=async()=>{const app=$('#app');
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},isStaff()?'Shipments':'My Shipments'),el('p',{class:'sub'},isStaff()?'All bookings, newest first':'Your bookings and their status')]),el('button',{class:'btn primary',onclick:()=>go('intake')},'+ New Shipment')]));
+  const ships=await api('/api/shipments').catch(()=>[]);app.append(el('div',{class:'card'},[shipTable(ships,true)]));};
+function shipTable(ships,withActions){if(!ships.length)return el('div',{class:'empty'},'No shipments yet. Click “New Shipment” to create your first booking.');
+  const rows=ships.map(s=>el('tr',{},[
+    el('td',{onclick:()=>openShipment(s.id),style:'cursor:pointer'},'#'+s.id),
+    el('td',{onclick:()=>openShipment(s.id),style:'cursor:pointer'},[el('div',{style:'font-weight:600'},s.shipper_name||s.client_name||'—'),el('div',{class:'muted',style:'font-size:12px'},'→ '+(s.consignee_name||'—'))]),
+    el('td',{},s.dest_port||'—'),el('td',{},s.ship_date||'—'),el('td',{},String(s.total_pieces||0)),el('td',{},money(s.total_charge)),
+    el('td',{},el('span',{class:'pill '+(s.status||'Draft')},s.status||'Draft')),
+    withActions?el('td',{},el('div',{class:'row-actions'},[el('button',{class:'btn ghost sm',onclick:()=>openShipment(s.id)},'Open'),el('button',{class:'btn ghost sm',onclick:()=>openLabels(s.id)},'🏷 Labels')])):null]));
+  return el('table',{class:'list-table'},[el('thead',{},el('tr',{},['#','Shipper → Consignee','Destination','Ship date','Pieces','Charge','Status',withActions?'':null].filter(x=>x!=null).map(h=>el('th',{},h)))),el('tbody',{},rows)]);}
+async function openShipment(id){try{const s=await api('/api/shipments/'+id);go('intake');views.intake(s);}catch(e){flash(e.message,true);}}
+
+/* ================= labels (barcode, printable) ================= */
+async function openLabels(id){let s;try{s=await api('/api/shipments/'+id);}catch(e){flash(e.message,true);return;}
+  const nav=$('#nav');if(nav)[...nav.children].forEach(b=>b.classList.remove('active'));
+  const app=$('#app');app.innerHTML='';document.body.className='print-thermal';
+  const setPage=(mode)=>{document.body.className=mode==='a4'?'print-a4':'print-thermal';
+    $('#pagestyle').textContent=mode==='a4'?'@page{size:A4;margin:8mm}':'@page{size:4in 6in;margin:0}';};
+  setPage('thermal');
+  const layoutSel=el('select',{style:'width:auto',onchange:e=>setPage(e.target.value)},[el('option',{value:'thermal'},'4×6 thermal label'),el('option',{value:'a4'},'A4 / Letter sheet')]);
+  app.append(el('div',{class:'label-toolbar'},[el('button',{class:'btn ghost',onclick:()=>{document.body.className='';$('#pagestyle').textContent='';go('shipments');}},'← Back'),
+    el('div',{},[el('label',{},'Label size'),layoutSel]),el('div',{class:'spacer',style:'flex:1'}),el('button',{class:'btn primary',onclick:()=>window.print()},'🖨 Print / Save as PDF')]));
+  const area=el('div',{class:'labels-area'});
+  const items=s.items||[];let total=0;items.forEach(it=>total+=Math.max(1,Math.min(100,+it.quantity||1)));
+  let idx=0;
+  for(const it of items){const qty=Math.max(1,Math.min(100,+it.quantity||1));
+    for(let p=1;p<=qty;p++){idx++;const code=`NV${s.id}-${it.id}-${p}`;
+      const svg=Code128.toSVG(code,{moduleWidth:2,height:56,fontSize:12});
+      area.append(el('div',{class:'label'},[
+        el('div',{class:'l-top'},[el('div',{class:'l-piece'},`Piece ${idx} of ${total}`),el('div',{class:'muted',style:'font-size:12px'},`Shipment #${s.id} · ${it.item_type}${it.description?' · '+it.description:''}`)]),
+        el('div',{},[el('div',{class:'muted',style:'font-size:11px;text-transform:uppercase;letter-spacing:.5px'},'Consignee'),el('div',{class:'l-co'},s.consignee_name||'—'),
+          el('div',{class:'l-meta'},s.to_address||''),el('div',{class:'l-meta'},[el('b',{},'To: '),s.dest_port||'—'])]),
+        el('div',{class:'l-bc',html:svg}),
+      ]));}}
+  app.append(area);
+}
+
+/* ================= clients (staff) ================= */
+views.clients=async()=>{const app=$('#app');clients=await api('/api/clients').catch(()=>[]);
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Clients'),el('p',{class:'sub'},'Your customer directory')]),el('button',{class:'btn primary',onclick:()=>clientForm()},'+ Add client')]));
+  if(!clients.length){app.append(el('div',{class:'card empty'},'No clients yet.'));return;}
+  const rows=clients.map(c=>el('tr',{onclick:()=>clientForm(c)},[el('td',{},el('b',{},c.name)),el('td',{},c.phone||'—'),el('td',{},c.email||'—'),el('td',{},c.id_number||'—'),el('td',{},[c.city,c.country].filter(Boolean).join(', ')||'—')]));
+  app.append(el('div',{class:'card'},[el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Name','Phone','Email','ID / Passport','Location'].map(h=>el('th',{},h)))),el('tbody',{},rows)])]));};
+function clientForm(c){const editing=!!(c&&c.id);c=c?{...c}:{};const app=$('#app');app.innerHTML='';const F={};
+  const f=(k,l,o={})=>{const i=o.type==='textarea'?el('textarea',{}):el('input',{type:o.type||'text'});F[k]=i;if(c[k]!=null)i.value=c[k];return el('div',{},[el('label',{},l),i]);};
+  app.append(el('div',{class:'toolbar'},[el('h2',{},editing?'Edit client':'Add client'),el('div',{class:'row-actions'},[editing?el('button',{class:'btn danger',onclick:async()=>{if(confirm('Delete client?')){await api('/api/clients/'+c.id,{method:'DELETE'});go('clients');}}},'Delete'):null,el('button',{class:'btn ghost',onclick:()=>go('clients')},'Cancel'),el('button',{class:'btn primary',onclick:doSave},'Save')])]));
+  app.append(el('div',{class:'card'},[el('div',{class:'grid g2'},[f('name','Full name'),f('id_number','ID / Passport #')]),el('div',{class:'grid g2'},[f('phone','Phone',{type:'tel'}),f('email','Email',{type:'email'})]),f('address','Address',{type:'textarea'}),el('div',{class:'grid g2'},[f('city','City'),f('country','Country')]),f('notes','Notes',{type:'textarea'})]));
+  async function doSave(){const data={};['name','phone','email','id_number','address','city','country','notes'].forEach(k=>data[k]=F[k].value);if(!data.name){flash('Name required',true);return;}try{c.id?await api('/api/clients/'+c.id,{method:'PUT',body:JSON.stringify(data)}):await api('/api/clients',{method:'POST',body:JSON.stringify(data)});flash('Client saved');go('clients');}catch(e){flash(e.message,true);}}}
+
+/* ================= accounts (staff) ================= */
+views.accounts=async()=>{const app=$('#app');const users=await api('/api/users').catch(()=>[]);
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Accounts'),el('p',{class:'sub'},'Staff and customer logins')]),el('button',{class:'btn primary',onclick:accountForm},'+ Add account')]));
+  const rows=users.map(u=>el('tr',{},[el('td',{},el('b',{},u.username)),el('td',{},u.name||'—'),el('td',{},el('span',{class:'pill '+(u.role==='staff'?'Booked':'Draft')},u.role)),el('td',{},u.client_name||'—'),
+    el('td',{},u.id===ME.user.id?el('span',{class:'muted'},'(you)'):el('button',{class:'btn danger sm',onclick:async()=>{if(confirm('Delete account '+u.username+'?')){await api('/api/users/'+u.id,{method:'DELETE'});go('accounts');}}},'Delete'))]));
+  app.append(el('div',{class:'card'},[el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Username','Name','Role','Linked client',''].map(h=>el('th',{},h)))),el('tbody',{},rows)])]));};
+function accountForm(){const app=$('#app');app.innerHTML='';const F={};
+  const f=(k,l,type='text')=>{const i=el('input',{type});F[k]=i;return el('div',{},[el('label',{},l),i]);};
+  const roleSel=el('select',{},[el('option',{value:'customer'},'Customer'),el('option',{value:'staff'},'Staff')]);
+  app.append(el('div',{class:'toolbar'},[el('h2',{},'Add account'),el('div',{class:'row-actions'},[el('button',{class:'btn ghost',onclick:()=>go('accounts')},'Cancel'),el('button',{class:'btn primary',onclick:doSave},'Create account')])]));
+  app.append(el('div',{class:'card'},[el('div',{class:'grid g2'},[el('div',{},[el('label',{},'Role'),roleSel]),f('name','Full name')]),el('div',{class:'grid g2'},[f('username','Username'),f('password','Password','password')]),el('div',{class:'grid g2'},[f('phone','Phone (customer)'),f('email','Email (customer)')]),el('p',{class:'hint'},'A customer account automatically gets a linked client record so their shipments are tied to them.')]));
+  async function doSave(){try{await api('/api/users',{method:'POST',body:JSON.stringify({role:roleSel.value,name:F.name.value,username:F.username.value,password:F.password.value,phone:F.phone.value,email:F.email.value})});flash('Account created');go('accounts');}catch(e){flash(e.message,true);}}}
+
+/* ================= profile (customer) ================= */
+views.profile=async()=>{const app=$('#app');const c=ME.client||{};const F={};
+  const f=(k,l,o={})=>{const i=o.type==='textarea'?el('textarea',{}):el('input',{type:o.type||'text'});F[k]=i;if(c[k]!=null)i.value=c[k];return el('div',{},[el('label',{},l),i]);};
+  app.append(el('div',{class:'toolbar'},[el('h2',{},'My Profile')]));
+  app.append(el('div',{class:'card'},[el('h3',{},'My details'),el('div',{class:'grid g2'},[f('name','Full name'),f('id_number','ID / Passport #')]),el('div',{class:'grid g2'},[f('phone','Phone',{type:'tel'}),f('email','Email',{type:'email'})]),f('address','Address',{type:'textarea'}),el('div',{class:'grid g2'},[f('city','City'),f('country','Country')]),
+    el('div',{style:'margin-top:12px'},[el('button',{class:'btn primary',onclick:async()=>{const data={};['name','phone','email','id_number','address','city','country'].forEach(k=>data[k]=F[k].value);try{await api('/api/clients/'+c.id,{method:'PUT',body:JSON.stringify(data)});ME.client=await api('/api/clients/'+c.id);flash('Profile saved');}catch(e){flash(e.message,true);}}},'Save profile')])]));
+  app.append(passwordCard());};
+function passwordCard(){const P={};const f=(k,l)=>{const i=el('input',{type:'password'});P[k]=i;return el('div',{},[el('label',{},l),i]);};
+  return el('div',{class:'card'},[el('h3',{},'Change password'),el('div',{class:'grid g3'},[f('current','Current password'),f('next','New password'),el('div',{style:'align-self:end'},[el('button',{class:'btn primary',onclick:async()=>{try{await api('/api/password',{method:'PUT',body:JSON.stringify({current:P.current.value,next:P.next.value})});flash('Password changed');P.current.value='';P.next.value='';}catch(e){flash(e.message,true);}}},'Update password')])])]);}
+
+/* ================= settings (staff) ================= */
+views.settings=async()=>{const app=$('#app');settings=await api('/api/settings');const F={};
+  const f=(k,l,hint)=>{const i=el('input',{type:'number',step:'0.01',value:settings[k]});F[k]=i;return el('div',{},[el('label',{},l),i,hint?el('div',{class:'hint'},hint):null]);};
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Settings'),el('p',{class:'sub'},'Default rates applied to new item lines')])]));
+  const curSel=el('select',{},['USD','JMD','GBP','EUR','TTD','GYD','XOF','NGN'].map(x=>el('option',{value:x,selected:x===settings.currency?'selected':null},x)));
+  app.append(el('div',{class:'card'},[el('div',{class:'grid g3'},[f('default_barrel_rate','Flat rate per barrel','Charged per barrel regardless of size'),f('default_volume_rate','Volume rate','Per ft³ (inches) or per CBM (cm)'),el('div',{},[el('label',{},'Currency'),curSel])]),el('div',{class:'divider'}),el('button',{class:'btn primary',onclick:async()=>{settings=await api('/api/settings',{method:'PUT',body:JSON.stringify({default_barrel_rate:F.default_barrel_rate.value,default_volume_rate:F.default_volume_rate.value,currency:curSel.value})});flash('Settings saved');}},'Save settings')]));
+  app.append(passwordCard());};
+
+boot();
+</script>
+</body>
+</html>
