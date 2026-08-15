@@ -250,7 +250,13 @@ async function api(req, res, pathname, method) {
       body.owner_client_id = existing.owner_client_id;
       body.created_by = existing.created_by;
       if (!isStaff) { body.status = existing.status; body.client_id = existing.client_id; }
-      transaction(() => { db.prepare(`UPDATE shipments SET ${SHIP_COLS.map(c => `${c}=@${c}`).join(',')} WHERE id=@id`).run({ ...pick(body, SHIP_COLS), id }); saveShipmentItems(id, body.items); });
+      // Merge: fields omitted from the request keep their existing value (no accidental wipe).
+      const merged = {};
+      for (const c of SHIP_COLS) merged[c] = (body[c] !== undefined) ? body[c] : existing[c];
+      transaction(() => {
+        db.prepare(`UPDATE shipments SET ${SHIP_COLS.map(c => `${c}=@${c}`).join(',')} WHERE id=@id`).run({ ...merged, id });
+        if (Array.isArray(body.items)) saveShipmentItems(id, body.items); // only touch items when provided
+      });
       return sendJSON(res, 200, getShipment(id));
     }
     if (method === 'DELETE' && id) {
