@@ -49,18 +49,30 @@ CREATE TABLE IF NOT EXISTS shipments (
   created_by         INTEGER REFERENCES users(id) ON DELETE SET NULL,
 
   -- Shipper (FROM)
+  shipper_first      TEXT,
+  shipper_last       TEXT,
   shipper_name       TEXT,
   shipper_phone      TEXT,
   shipper_email      TEXT,
   shipper_id         TEXT,
   from_address       TEXT,
+  from_city          TEXT,
+  from_state         TEXT,
+  from_zip           TEXT,
+  from_country       TEXT,
 
   -- Consignee (TO)
+  consignee_first    TEXT,
+  consignee_last     TEXT,
   consignee_name     TEXT,
   consignee_phone    TEXT,
   consignee_email    TEXT,
   consignee_id       TEXT,
   to_address         TEXT,
+  to_city            TEXT,
+  to_state           TEXT,
+  to_zip             TEXT,
+  to_country         TEXT,
 
   -- Shipment / tracking
   bl_number          TEXT,
@@ -118,7 +130,15 @@ CREATE TABLE IF NOT EXISTS settings (
   id                 INTEGER PRIMARY KEY CHECK (id = 1),
   default_barrel_rate REAL NOT NULL DEFAULT 75,   -- flat $/barrel
   default_volume_rate REAL NOT NULL DEFAULT 8,    -- $/ft3
-  currency           TEXT NOT NULL DEFAULT 'USD'
+  currency           TEXT NOT NULL DEFAULT 'USD',
+  -- Company details shown on the printable invoice (editable in Settings)
+  company_name       TEXT DEFAULT 'Scotty''s Caribbean Shipping',
+  company_tagline    TEXT DEFAULT 'To the Caribbean & the rest of the world',
+  company_agent      TEXT DEFAULT 'Agents for D.A.D Caribbean Shipping Inc.',
+  company_address    TEXT DEFAULT '961 East 51 Street, Brooklyn, NY 11203',
+  company_phone      TEXT DEFAULT '718.941.8443 · 347.200.9626',
+  company_email      TEXT DEFAULT 'scottyscaribbean@aol.com',
+  invoice_terms      TEXT DEFAULT 'Freight charges not paid for within 2 weeks will be collected at destination.'
 );
 INSERT OR IGNORE INTO settings (id) VALUES (1);
 `);
@@ -128,6 +148,25 @@ for (const stmt of [
   "ALTER TABLE shipments ADD COLUMN owner_client_id INTEGER",
   "ALTER TABLE shipments ADD COLUMN created_by INTEGER",
   "ALTER TABLE shipments ADD COLUMN pickup_date TEXT",
+  "ALTER TABLE shipments ADD COLUMN shipper_first TEXT",
+  "ALTER TABLE shipments ADD COLUMN shipper_last TEXT",
+  "ALTER TABLE shipments ADD COLUMN from_city TEXT",
+  "ALTER TABLE shipments ADD COLUMN from_state TEXT",
+  "ALTER TABLE shipments ADD COLUMN from_zip TEXT",
+  "ALTER TABLE shipments ADD COLUMN from_country TEXT",
+  "ALTER TABLE shipments ADD COLUMN consignee_first TEXT",
+  "ALTER TABLE shipments ADD COLUMN consignee_last TEXT",
+  "ALTER TABLE shipments ADD COLUMN to_city TEXT",
+  "ALTER TABLE shipments ADD COLUMN to_state TEXT",
+  "ALTER TABLE shipments ADD COLUMN to_zip TEXT",
+  "ALTER TABLE shipments ADD COLUMN to_country TEXT",
+  "ALTER TABLE settings ADD COLUMN company_name TEXT DEFAULT 'Scotty''s Caribbean Shipping'",
+  "ALTER TABLE settings ADD COLUMN company_tagline TEXT DEFAULT 'To the Caribbean & the rest of the world'",
+  "ALTER TABLE settings ADD COLUMN company_agent TEXT DEFAULT 'Agents for D.A.D Caribbean Shipping Inc.'",
+  "ALTER TABLE settings ADD COLUMN company_address TEXT DEFAULT '961 East 51 Street, Brooklyn, NY 11203'",
+  "ALTER TABLE settings ADD COLUMN company_phone TEXT DEFAULT '718.941.8443 · 347.200.9626'",
+  "ALTER TABLE settings ADD COLUMN company_email TEXT DEFAULT 'scottyscaribbean@aol.com'",
+  "ALTER TABLE settings ADD COLUMN invoice_terms TEXT DEFAULT 'Freight charges not paid for within 2 weeks will be collected at destination.'",
 ]) {
   try { db.exec(stmt); } catch (_) { /* column already exists */ }
 }

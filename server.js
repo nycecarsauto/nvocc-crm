@@ -48,9 +48,12 @@ function transaction(fn) {
 /* --------------------------- data access --------------------------- */
 const CLIENT_COLS = ['name', 'phone', 'email', 'id_number', 'address', 'city', 'country', 'notes'];
 const SHIP_COLS = [
-  'client_id', 'owner_client_id', 'created_by', 'shipper_name', 'shipper_phone', 'shipper_email', 'shipper_id', 'from_address',
-  'consignee_name', 'consignee_phone', 'consignee_email', 'consignee_id', 'to_address',
-  'bl_number', 'pickup_date', 'ship_date', 'dest_port', 'carrier', 'vessel', 'container_number', 'status', 'notes',
+  'client_id', 'owner_client_id', 'created_by',
+  'shipper_first', 'shipper_last', 'shipper_name', 'shipper_phone', 'shipper_email',
+  'from_address', 'from_city', 'from_state', 'from_zip', 'from_country',
+  'consignee_first', 'consignee_last', 'consignee_name', 'consignee_phone', 'consignee_email',
+  'to_address', 'to_city', 'to_state', 'to_zip', 'to_country',
+  'bl_number', 'pickup_date', 'ship_date', 'dest_port', 'status', 'notes',
 ];
 const ITEM_COLS = [
   'item_type', 'description', 'quantity', 'length', 'width', 'height', 'dim_unit',
@@ -164,8 +167,12 @@ async function api(req, res, pathname, method) {
     if (method === 'GET') return sendJSON(res, 200, db.prepare('SELECT * FROM settings WHERE id=1').get());
     if (method === 'PUT') {
       if (!isStaff) return sendJSON(res, 403, { error: 'Staff only' });
-      db.prepare('UPDATE settings SET default_barrel_rate=@a, default_volume_rate=@b, currency=@c WHERE id=1')
-        .run({ a: Number(body.default_barrel_rate) || 0, b: Number(body.default_volume_rate) || 0, c: body.currency || 'USD' });
+      const cur = db.prepare('SELECT * FROM settings WHERE id=1').get();
+      const g = (k) => (body[k] !== undefined ? body[k] : cur[k]);
+      db.prepare(`UPDATE settings SET default_barrel_rate=@a, default_volume_rate=@b, currency=@c,
+         company_name=@cn, company_tagline=@ct, company_agent=@ca, company_address=@cad, company_phone=@cp, company_email=@ce, invoice_terms=@it WHERE id=1`)
+        .run({ a: Number(body.default_barrel_rate) || 0, b: Number(body.default_volume_rate) || 0, c: body.currency || 'USD',
+          cn: g('company_name'), ct: g('company_tagline'), ca: g('company_agent'), cad: g('company_address'), cp: g('company_phone'), ce: g('company_email'), it: g('invoice_terms') });
       return sendJSON(res, 200, db.prepare('SELECT * FROM settings WHERE id=1').get());
     }
   }
