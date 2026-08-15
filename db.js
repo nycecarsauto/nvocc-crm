@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS shipments (
 
   -- Shipment / tracking
   bl_number          TEXT,
+  pickup_date        TEXT,          -- date the CUSTOMER requests pickup
   ship_date          TEXT,
   dest_port          TEXT,
   carrier            TEXT,
@@ -126,6 +127,7 @@ INSERT OR IGNORE INTO settings (id) VALUES (1);
 for (const stmt of [
   "ALTER TABLE shipments ADD COLUMN owner_client_id INTEGER",
   "ALTER TABLE shipments ADD COLUMN created_by INTEGER",
+  "ALTER TABLE shipments ADD COLUMN pickup_date TEXT",
 ]) {
   try { db.exec(stmt); } catch (_) { /* column already exists */ }
 }

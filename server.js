@@ -50,7 +50,7 @@ const CLIENT_COLS = ['name', 'phone', 'email', 'id_number', 'address', 'city', '
 const SHIP_COLS = [
   'client_id', 'owner_client_id', 'created_by', 'shipper_name', 'shipper_phone', 'shipper_email', 'shipper_id', 'from_address',
   'consignee_name', 'consignee_phone', 'consignee_email', 'consignee_id', 'to_address',
-  'bl_number', 'ship_date', 'dest_port', 'carrier', 'vessel', 'container_number', 'status', 'notes',
+  'bl_number', 'pickup_date', 'ship_date', 'dest_port', 'carrier', 'vessel', 'container_number', 'status', 'notes',
 ];
 const ITEM_COLS = [
   'item_type', 'description', 'quantity', 'length', 'width', 'height', 'dim_unit',
@@ -224,7 +224,14 @@ async function api(req, res, pathname, method) {
       body.created_by = me.id;
       if (!isStaff) body.owner_client_id = ownFilter;               // customers own their own
       else if (!body.owner_client_id) body.owner_client_id = body.client_id || null;
-      const sid = transaction(() => { const r = insertRow('shipments', SHIP_COLS, body); const nid = r.lastInsertRowid; saveShipmentItems(nid, body.items); return nid; });
+      const sid = transaction(() => {
+        const r = insertRow('shipments', SHIP_COLS, body);
+        const nid = r.lastInsertRowid;
+        // Auto-generate a booking / BL number for the client if none was entered.
+        if (!body.bl_number) db.prepare('UPDATE shipments SET bl_number=? WHERE id=?').run('NV' + String(nid).padStart(6, '0'), nid);
+        saveShipmentItems(nid, body.items);
+        return nid;
+      });
       return sendJSON(res, 201, getShipment(sid));
     }
     if (method === 'PUT' && id) {

@@ -204,9 +204,13 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
       el('div',{class:'grid g2'},[field('consignee_phone','Phone',{type:'tel'}),field('consignee_email','Email',{type:'email'})]),
       field('consignee_id','ID / Passport #'),field('to_address','Delivery / destination address',{type:'textarea',ph:'Street, city, country'})])]));
 
-  const trackFields=[field('bl_number','BL / Booking #',{ro:mine}),field('ship_date','Ship date',{type:'date',ro:mine}),
+  const trackFields=[
+    field('pickup_date','Requested pick-up date',{type:'date',hint:'The date you would like your shipment collected.'}),
+    field('bl_number','BL / Booking #',{ro:mine}),
     staff?field('status','Status',{options:['Draft','Booked','Shipped','Delivered']}):statusReadonly(s.status),
-    field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown'}),field('carrier','Carrier / line',{ro:mine}),
+    field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown'}),
+    field('ship_date','Ship date',{type:'date',ro:mine,hint:mine?'Set by the office once booked.':''}),
+    field('carrier','Carrier / line',{ro:mine}),
     field('vessel','Vessel / voyage',{ro:mine}),field('container_number','Container #',{ro:mine})];
   form.append(el('div',{class:'card'},[el('h3',{},'Shipment & tracking'),el('div',{class:'grid g3'},trackFields),
     mine?el('p',{class:'hint'},'Tracking details and status are filled in by the shipping office after you book.'):null,
@@ -229,13 +233,13 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
       el('td',{class:dc},bind('length',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'L'})),
       el('td',{class:dc},bind('width',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'W'})),
       el('td',{class:dc},bind('height',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'H'})),
-      el('td',{class:dc},unitSel),el('td',{},el('span',{class:'muted'},isFlat?'flat':`${p.volume} ${p.unit}`)),
+      el('td',{class:dc},unitSel),el('td',{},el('span',{class:'muted','data-vol':idx},isFlat?'flat':`${p.volume} ${p.unit}`)),
       el('td',{},bind('weight',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'ea'})),
       el('td',{},bind('declared_value',{type:'number',min:0,step:'0.01',class:'cell-sm',placeholder:'$ ea'})),
       el('td',{},bind('rate',{type:'number',min:0,step:'0.01',class:'cell-sm'})),
       el('td',{},el('b',{'data-charge':idx},money(p.charge))),
       el('td',{},el('button',{class:'btn danger sm',onclick:()=>{itemsState.splice(idx,1);renderItems();}},'✕'))]);}
-  function recompute(){let pieces=0,weight=0,value=0,charge=0;itemsState.forEach((it,idx)=>{const p=priceRow(it);const q=Math.max(0,Math.min(100,+it.quantity||0));pieces+=q;weight+=(+it.weight||0)*q;value+=(+it.declared_value||0)*q;charge+=p.charge;const cell=tbody.querySelector(`[data-charge="${idx}"]`);if(cell)cell.textContent=money(p.charge);});totalsBar.innerHTML='';totalsBar.append(chip('Pieces',pieces),chip('Weight',weight.toFixed(1)),chip('Declared value',money(value)),chip('Total charge',money(charge)));}
+  function recompute(){let pieces=0,weight=0,value=0,charge=0;itemsState.forEach((it,idx)=>{const p=priceRow(it);const q=Math.max(0,Math.min(100,+it.quantity||0));pieces+=q;weight+=(+it.weight||0)*q;value+=(+it.declared_value||0)*q;charge+=p.charge;const cell=tbody.querySelector(`[data-charge="${idx}"]`);if(cell)cell.textContent=money(p.charge);const vcell=tbody.querySelector(`[data-vol="${idx}"]`);if(vcell)vcell.textContent=it.pricing_mode==='flat'?'flat':`${p.volume} ${p.unit}`;});totalsBar.innerHTML='';totalsBar.append(chip('Pieces',pieces),chip('Weight',weight.toFixed(1)),chip('Declared value',money(value)),chip('Total charge',money(charge)));}
   const chip=(l,v)=>el('div',{class:'totchip'},[el('b',{},String(v)),el('span',{},l)]);
   (s.items||[]).forEach(it=>itemsState.push({...it}));
   form.append(el('div',{class:'card'},[el('div',{class:'toolbar'},[el('h3',{style:'margin:0'},'Items being sent'),
@@ -246,7 +250,7 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
 
   function statusReadonly(v){return el('div',{},[el('label',{},'Status'),el('div',{style:'padding-top:4px'},[el('span',{class:'pill '+(v||'Draft')},v||'Draft')])]);}
   async function doSave(){const payload={};
-    ['shipper_name','shipper_phone','shipper_email','shipper_id','from_address','consignee_name','consignee_phone','consignee_email','consignee_id','to_address','bl_number','ship_date','dest_port','carrier','vessel','container_number','notes'].forEach(k=>payload[k]=F[k]?F[k].value:(s[k]??null));
+    ['shipper_name','shipper_phone','shipper_email','shipper_id','from_address','consignee_name','consignee_phone','consignee_email','consignee_id','to_address','bl_number','pickup_date','ship_date','dest_port','carrier','vessel','container_number','notes'].forEach(k=>payload[k]=F[k]?F[k].value:(s[k]??null));
     if(staff){payload.status=F.status?F.status.value:'Draft';payload.client_id=F._client&&F._client.value?Number(F._client.value):null;payload.owner_client_id=payload.client_id;}
     payload.items=itemsState;
     if(!payload.shipper_name&&!payload.consignee_name){flash('Add a shipper or consignee name',true);return;}
@@ -261,12 +265,12 @@ views.shipments=async()=>{const app=$('#app');
   const ships=await api('/api/shipments').catch(()=>[]);app.append(el('div',{class:'card'},[shipTable(ships,true)]));};
 function shipTable(ships,withActions){if(!ships.length)return el('div',{class:'empty'},'No shipments yet. Click “New Shipment” to create your first booking.');
   const rows=ships.map(s=>el('tr',{},[
-    el('td',{onclick:()=>openShipment(s.id),style:'cursor:pointer'},'#'+s.id),
+    el('td',{onclick:()=>openShipment(s.id),style:'cursor:pointer;font-weight:600'}, s.bl_number || ('#'+s.id)),
     el('td',{onclick:()=>openShipment(s.id),style:'cursor:pointer'},[el('div',{style:'font-weight:600'},s.shipper_name||s.client_name||'—'),el('div',{class:'muted',style:'font-size:12px'},'→ '+(s.consignee_name||'—'))]),
     el('td',{},s.dest_port||'—'),el('td',{},s.ship_date||'—'),el('td',{},String(s.total_pieces||0)),el('td',{},money(s.total_charge)),
     el('td',{},el('span',{class:'pill '+(s.status||'Draft')},s.status||'Draft')),
     withActions?el('td',{},el('div',{class:'row-actions'},[el('button',{class:'btn ghost sm',onclick:()=>openShipment(s.id)},'Open'),el('button',{class:'btn ghost sm',onclick:()=>openLabels(s.id)},'🏷 Labels')])):null]));
-  return el('table',{class:'list-table'},[el('thead',{},el('tr',{},['#','Shipper → Consignee','Destination','Ship date','Pieces','Charge','Status',withActions?'':null].filter(x=>x!=null).map(h=>el('th',{},h)))),el('tbody',{},rows)]);}
+  return el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Booking #','Shipper → Consignee','Destination','Ship date','Pieces','Charge','Status',withActions?'':null].filter(x=>x!=null).map(h=>el('th',{},h)))),el('tbody',{},rows)]);}
 async function openShipment(id){try{const s=await api('/api/shipments/'+id);go('intake');views.intake(s);}catch(e){flash(e.message,true);}}
 
 /* ================= labels (barcode, printable) ================= */
