@@ -55,6 +55,9 @@ ship = {"shipper_first":"M","shipper_last":"Yarde","shipper_name":"M Yarde",
         "consignee_first":"Cardisha","consignee_last":"McMillan","consignee_name":"Cardisha McMillan",
         "to_address":"Perdmontemps, St David","to_city":"St George","to_country":"Grenada","consignee_phone":"473-419-7489",
         "pickup_date":"2026-07-16","pickup_time":"Morning (8am-12pm)","dest_port":"Grenada",
+        "origin":"Brooklyn, NY","called_in_by":"Front desk","signed_by":"D. Duncan",
+        "from_company":"NYCE Cargo","to_company":"McMillan Household","from_ref":"REF-99","to_ref":"REF-100",
+        "invoice_number":"INV-5379","service_request":"Standard","payment_method":"Prepaid","total_cost":120,
         "items":[{"item_type":"barrel","pricing_mode":"flat","description":"Barrel","quantity":3,"rate":95,"weight":50},
                  {"item_type":"box","pricing_mode":"volume","description":"BTN","quantity":2,"length":24,"width":18,"height":18,"dim_unit":"in","rate":8}]}
 s,b = c1.req("POST","/api/shipments",ship)
@@ -64,6 +67,9 @@ check("consignee_name = first+last", b.get("consignee_name")=="Cardisha McMillan
 check("structured address stored", b.get("from_city")=="Queens" and b.get("to_city")=="St George", f"{b.get('from_city')}/{b.get('to_city')}")
 check("pickup_date stored", b.get("pickup_date")=="2026-07-16", b.get("pickup_date"))
 check("pickup_time stored", b.get("pickup_time")=="Morning (8am-12pm)", b.get("pickup_time"))
+check("waybill office fields stored", b.get("origin")=="Brooklyn, NY" and b.get("from_company")=="NYCE Cargo" and b.get("signed_by")=="D. Duncan", f"{b.get('origin')}/{b.get('from_company')}/{b.get('signed_by')}")
+check("waybill payment/service stored", b.get("service_request")=="Standard" and b.get("payment_method")=="Prepaid", f"{b.get('service_request')}/{b.get('payment_method')}")
+check("waybill total_cost stored", float(b.get("total_cost") or 0)==120, b.get("total_cost"))
 check("auto BL number NV000001", b.get("bl_number")=="NV000001", b.get("bl_number"))
 barrel = b["items"][0]; box = b["items"][1]
 check("barrel flat charge 95*3=285", barrel["line_charge"]==285, barrel["line_charge"])
@@ -97,6 +103,7 @@ s,b = admin.req("PUT",f"/api/shipments/{sid1}",{"status":"Shipped"})
 check("staff PUT sets status Shipped", b.get("status")=="Shipped", b.get("status"))
 check("PUT hardening: bl_number preserved on partial update", b.get("bl_number")=="NV000001", b.get("bl_number"))
 check("PUT hardening: address preserved on partial update", b.get("from_city")=="Queens", b.get("from_city"))
+check("PUT hardening: waybill office fields preserved", b.get("origin")=="Brooklyn, NY" and b.get("from_company")=="NYCE Cargo", f"{b.get('origin')}/{b.get('from_company')}")
 
 s,b = c1.req("GET","/api/settings")
 check("settings expose company_name", b.get("company_name")=="Scotty's Caribbean Shipping", b.get("company_name"))

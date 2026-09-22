@@ -52,6 +52,24 @@
   .wb-tag{display:inline-flex;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25);align-items:center;justify-content:center;font-size:12px;font-weight:700}
   .wb-when{margin-top:6px;padding-top:12px;border-top:1px dashed var(--line)}
   @media(max-width:720px){.waybill-cols{grid-template-columns:1fr}.wh-meta{gap:16px}}
+  /* office waybill input form */
+  .wb-office{padding:16px 18px}
+  .wb-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .wb-big{display:flex;align-items:center;gap:10px}
+  .wb-big-lbl{font-weight:800;letter-spacing:2px;color:var(--muted);font-size:13px}
+  .wb-big input{font-size:20px;font-weight:800;color:var(--brand);border:none;border-bottom:2px solid var(--line);border-radius:0;width:190px;padding:2px 4px}
+  .wb-money{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .wb-money-cell{background:var(--chip);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px}
+  .wb-money-cell span{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .wb-amt{font-size:18px}.wb-profit{color:#059669}
+  .wb-money-cell input{border:none;background:transparent;font-size:18px;font-weight:700;padding:0;color:var(--warn)}
+  .wb-grid{display:flex;flex-direction:column;gap:9px}
+  .wb-head-row,.wb-row{display:grid;grid-template-columns:1fr 160px 1fr;gap:10px;align-items:center}
+  .wb-side{font-weight:800;letter-spacing:1px;text-align:center;padding:7px;border-radius:8px;color:#fff}
+  .wb-from-h{background:var(--warn)}.wb-to-h{background:var(--brand)}
+  .wb-lbl{text-align:center;font-size:12px;color:var(--muted);font-weight:600}
+  .wb-cell{min-width:0}
+  @media(max-width:720px){.wb-head-row,.wb-row{grid-template-columns:1fr;gap:4px}.wb-lbl{text-align:left;font-weight:700;color:var(--ink);margin-top:8px}.wb-money{grid-template-columns:1fr}}
   .totchip{display:inline-flex;flex-direction:column;background:var(--chip);border-radius:11px;padding:10px 16px;min-width:120px}
   .totchip b{font-size:20px}.totchip span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
   .totals{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
@@ -284,8 +302,8 @@ const stat=(l,v)=>el('div',{class:'card',style:'text-align:center'},[el('div',{s
 /* ================= intake ================= */
 views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.stringify(shipment)):{status:'Draft',items:[]};const editing=!!s.id;const staff=isStaff();
   const mine=!staff; const form=el('div',{});
-  form.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},editing?`Edit Shipment #${s.id}`:'New Shipment Intake'),
-    el('p',{class:'sub'},'Enter your pick-up and delivery details, choose when to be collected, and list every barrel / box being sent.')]),
+  form.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},staff?(editing?`Waybill # ${s.bl_number||s.id}`:'New Waybill'):(editing?`Edit Shipment #${s.id}`:'New Shipment Intake')),
+    el('p',{class:'sub'},staff?'Office waybill — full shipment record.':'Enter your pick-up and delivery details, choose when to be collected, and list every barrel / box being sent.')]),
     el('div',{class:'row-actions'},[
       editing?el('button',{class:'btn ghost',onclick:()=>openInvoice(s.id)},'🧾 Invoice'):null,
       editing?el('button',{class:'btn ghost',onclick:()=>openLabels(s.id)},'🏷 Print labels'):null,
@@ -296,12 +314,12 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
   const field=(name,label,opts={})=>{const input=opts.type==='textarea'?el('textarea',{}):opts.options?el('select',{},opts.options.map(o=>el('option',{value:o},o))):el('input',{type:opts.type||'text',placeholder:opts.ph||''});F[name]=input;if(s[name]!=null)input.value=s[name];if(opts.ro)input.setAttribute('disabled','');return el('div',{},[el('label',{},label),input,opts.hint?el('div',{class:'hint'},opts.hint):null]);};
 
   // staff: client link + owner; customer: prefilled shipper from profile
+  let clientSel=null, chargesEl=null, profitEl=null;
   if(staff){
-    const clientSel=el('select',{},[el('option',{value:''},'— New / walk-in —'),...clients.map(c=>el('option',{value:c.id},`${c.name}${c.phone?' · '+c.phone:''}`))]);
+    clientSel=el('select',{},[el('option',{value:''},'— New / walk-in —'),...clients.map(c=>el('option',{value:c.id},`${c.name}${c.phone?' · '+c.phone:''}`))]);
     if(s.owner_client_id)clientSel.value=s.owner_client_id; else if(s.client_id)clientSel.value=s.client_id;
     clientSel.addEventListener('change',()=>{const c=clients.find(x=>x.id==clientSel.value);if(!c)return;const p=(c.name||'').trim().split(/\s+/);F.shipper_first.value=p[0]||'';F.shipper_last.value=p.slice(1).join(' ')||'';F.shipper_phone.value=c.phone||'';F.shipper_email.value=c.email||'';F.from_address.value=c.address||'';F.from_city.value=c.city||'';F.from_country.value=c.country||'';});
     F._client=clientSel;
-    form.append(el('div',{class:'card'},[el('h3',{},'Client (owner of this shipment)'),el('div',{class:'grid g2'},[el('div',{},[el('label',{},'Assign to client'),clientSel]),el('div',{style:'align-self:end'},[el('button',{class:'btn ghost sm',onclick:()=>saveShipperAsClient(F,clientSel)},'＋ Save shipper as new client')])])]));
   } else if(!editing && ME.client){
     const c=ME.client;const parts=(c.name||'').trim().split(/\s+/);
     s.shipper_first=s.shipper_first||parts[0]||'';s.shipper_last=s.shipper_last||parts.slice(1).join(' ')||'';
@@ -309,41 +327,81 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
     s.from_address=s.from_address||c.address;s.from_city=s.from_city||c.city;s.from_country=s.from_country||c.country;
   }
 
-  // ---- Waybill header strip ----
-  const orderDate=(s.created_at||'').slice(0,10)||new Date().toISOString().slice(0,10);
-  form.append(el('div',{class:'waybill-head'},[
-    el('div',{class:'wh-brand'},[el('div',{class:'wh-title'},'WAYBILL'),el('div',{class:'wh-sub'},'Pick-up booking form')]),
-    el('div',{class:'wh-meta'},[
-      el('div',{},[el('span',{},'Waybill / Booking #'),el('b',{},s.bl_number||'— assigned on save —')]),
-      el('div',{},[el('span',{},'Order date'),el('b',{},orderDate)]),
-      el('div',{},[el('span',{},'Status'),el('b',{},s.status||'Draft')])])]));
-
-  // ---- Pick Up From / Deliver To (mirrors the waybill input form) ----
-  form.append(el('div',{class:'grid g2 waybill-cols'},[
-    el('div',{class:'card wb-box wb-from'},[el('h3',{},[el('span',{class:'wb-tag'},'A'),'Pick Up From']),
-      el('div',{class:'grid g2'},[field('shipper_first','First name',{ph:'John'}),field('shipper_last','Last name',{ph:'Brown'})]),
-      el('div',{class:'grid g2'},[field('shipper_phone','Phone',{type:'tel'}),field('shipper_email','Email',{type:'email'})]),
-      field('from_address','Street address',{ph:'House / street'}),
-      el('div',{class:'grid g2'},[field('from_city','City'),field('from_state','State / Region')]),
-      el('div',{class:'grid g2'},[field('from_zip','Postal code'),field('from_country','Country')]),
-      el('div',{class:'grid g2 wb-when'},[field('pickup_date','Pick-up date',{type:'date'}),field('pickup_time','Pick-up time',{options:['','Morning (8am–12pm)','Afternoon (12pm–5pm)','Evening (5pm–8pm)','Anytime']})]),
-      el('p',{class:'hint'},'Choose the date and time window you would like your barrels / boxes collected.')]),
-    el('div',{class:'card wb-box wb-to'},[el('h3',{},[el('span',{class:'wb-tag'},'B'),'Deliver To']),
-      el('div',{class:'grid g2'},[field('consignee_first','First name'),field('consignee_last','Last name')]),
-      el('div',{class:'grid g2'},[field('consignee_phone','Phone',{type:'tel'}),field('consignee_email','Email',{type:'email'})]),
-      field('to_address','Street address',{ph:'House / street'}),
-      el('div',{class:'grid g2'},[field('to_city','City / Town'),field('to_state','State / Region')]),
-      el('div',{class:'grid g2'},[field('to_zip','Postal code'),field('to_country','Country')]),
-      field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown, St George'})])]));
-
-  // ---- Office use / tracking ----
-  const trackFields=[
-    field('bl_number','BL / Booking #',{ro:mine}),
-    staff?field('status','Status',{options:['Draft','Booked','Shipped','Delivered']}):statusReadonly(s.status),
-    field('ship_date','Ship date',{type:'date',ro:mine,hint:mine?'Set by the office once booked.':''})];
-  form.append(el('div',{class:'card'},[el('h3',{},'Office use — tracking'),el('div',{class:'grid g3'},trackFields),
-    mine?el('p',{class:'hint'},'The booking number, ship date and status are filled in by the shipping office after you book.'):null,
-    field('notes','Special instructions / notes',{type:'textarea'})]));
+  if(staff){
+    /* ===== Full Waybill Input Form (office backend) — mirrors the classic waybill screen ===== */
+    const finput=(name,opts={})=>{const input=opts.type==='textarea'?el('textarea',{}):opts.options?el('select',{},opts.options.map(o=>el('option',{value:o},o))):el('input',{type:opts.type||'text',placeholder:opts.ph||''});F[name]=input;if(s[name]!=null)input.value=s[name];if(opts.ro)input.setAttribute('disabled','');return input;};
+    const lw=(label,node)=>el('div',{},[el('label',{},label),node]);
+    const wbRow=(label,left,right)=>el('div',{class:'wb-row'},[el('div',{class:'wb-cell'},left),el('div',{class:'wb-lbl'},label),el('div',{class:'wb-cell'},right)]);
+    chargesEl=el('b',{class:'wb-amt'},money(0));
+    profitEl=el('b',{class:'wb-amt wb-profit'},money(0));
+    const costsInput=finput('total_cost',{type:'number'});costsInput.step='0.01';costsInput.addEventListener('input',()=>recompute());
+    const orderDate=(s.created_at||'').slice(0,10)||new Date().toISOString().slice(0,10);
+    const orderInp=el('input',{type:'text',value:orderDate,disabled:''});
+    // ---- header block ----
+    form.append(el('div',{class:'card wb-office'},[
+      el('div',{class:'wb-title-row'},[
+        el('div',{class:'wb-big'},[el('span',{class:'wb-big-lbl'},'WAYBILL #'),finput('bl_number',{ph:'auto on save'})]),
+        el('button',{class:'btn ghost sm',onclick:()=>saveShipperAsClient(F,clientSel)},'＋ Save pickup as client')]),
+      el('div',{class:'grid g3'},[lw('Order Date',orderInp),lw('Customer #',clientSel),field('origin','Origin',{ph:'e.g. Brooklyn, NY'})]),
+      el('div',{class:'grid g3'},[field('dest_port','Destination',{ph:'e.g. St George, Grenada'}),field('called_in_by','Called In By'),field('status','Status',{options:['Draft','Booked','Shipped','Delivered']})]),
+      el('div',{class:'grid g3'},[field('signed_date','Signed Date',{type:'date'}),field('signed_time','Signed Time',{ph:'e.g. 3:00 PM'}),field('signed_by','Signed By')]),
+      el('div',{class:'grid g3'},[field('invoice_number','Invoice #'),field('invoice_date','Invoice Date',{type:'date'}),el('div',{})]),
+      el('div',{class:'wb-money'},[
+        el('div',{class:'wb-money-cell'},[el('span',{},'Charges'),chargesEl]),
+        el('div',{class:'wb-money-cell'},[el('span',{},'Costs'),costsInput]),
+        el('div',{class:'wb-money-cell'},[el('span',{},'Profit'),profitEl])])]));
+    // ---- three-column Pick Up From | labels | Deliver To ----
+    form.append(el('div',{class:'card wb-office'},[
+      el('div',{class:'wb-grid'},[
+        el('div',{class:'wb-head-row'},[el('div',{class:'wb-side wb-from-h'},'PICK UP FROM'),el('div',{class:'wb-lbl'}),el('div',{class:'wb-side wb-to-h'},'DELIVER TO')]),
+        wbRow('Date and Time',el('div',{class:'grid g2'},[finput('pickup_date',{type:'date'}),finput('pickup_time',{ph:'time / window'})]),el('div',{class:'grid g2'},[finput('ship_date',{type:'date'}),finput('deliver_time',{ph:'time / window'})])),
+        wbRow('Company',finput('from_company'),finput('to_company')),
+        wbRow('Other',finput('from_other'),finput('to_other')),
+        wbRow('Street',finput('from_address'),finput('to_address')),
+        wbRow('City',finput('from_city'),finput('to_city')),
+        wbRow('State, Zip, Country',el('div',{class:'grid g3'},[finput('from_state',{ph:'State'}),finput('from_zip',{ph:'Zip'}),finput('from_country',{ph:'Country'})]),el('div',{class:'grid g3'},[finput('to_state',{ph:'State'}),finput('to_zip',{ph:'Zip'}),finput('to_country',{ph:'Country'})])),
+        wbRow('Phone',finput('shipper_phone',{type:'tel'}),finput('consignee_phone',{type:'tel'})),
+        wbRow('Email',finput('shipper_email',{type:'email'}),finput('consignee_email',{type:'email'})),
+        wbRow('Contact',el('div',{class:'grid g2'},[finput('shipper_first',{ph:'First'}),finput('shipper_last',{ph:'Last'})]),el('div',{class:'grid g2'},[finput('consignee_first',{ph:'First'}),finput('consignee_last',{ph:'Last'})])),
+        wbRow('Ref No',finput('from_ref'),finput('to_ref')),
+        wbRow('Close Time, Etc.',finput('from_close',{ph:'e.g. Close at 5:30 PM'}),finput('to_close',{ph:'e.g. Close at 6:00 PM'}))])]));
+    // ---- bottom sections ----
+    form.append(el('div',{class:'card'},[
+      el('div',{class:'grid g2'},[lw('Contents',finput('contents',{type:'textarea',ph:'Short summary of goods'})),lw('Special Instructions',finput('special_instructions',{type:'textarea'}))]),
+      el('div',{class:'grid g2'},[lw('Notes',finput('notes',{type:'textarea'})),el('div',{},[el('label',{},'Bill To'),finput('billto_name',{ph:'Name'}),el('div',{style:'height:6px'}),finput('billto_contact',{ph:'Contact'}),el('div',{style:'height:6px'}),finput('billto_address',{ph:'Street address'})])]),
+      el('div',{class:'grid g2'},[lw('Service Request',finput('service_request',{options:['','Standard','Express','2nd Day','Air']})),lw('Payment Method',finput('payment_method',{options:['','Prepaid','Collect','Third Party']}))])]));
+  } else {
+    /* ===== Customer pick-up booking form ===== */
+    const orderDate=(s.created_at||'').slice(0,10)||new Date().toISOString().slice(0,10);
+    form.append(el('div',{class:'waybill-head'},[
+      el('div',{class:'wh-brand'},[el('div',{class:'wh-title'},'WAYBILL'),el('div',{class:'wh-sub'},'Pick-up booking form')]),
+      el('div',{class:'wh-meta'},[
+        el('div',{},[el('span',{},'Waybill / Booking #'),el('b',{},s.bl_number||'— assigned on save —')]),
+        el('div',{},[el('span',{},'Order date'),el('b',{},orderDate)]),
+        el('div',{},[el('span',{},'Status'),el('b',{},s.status||'Draft')])])]));
+    form.append(el('div',{class:'grid g2 waybill-cols'},[
+      el('div',{class:'card wb-box wb-from'},[el('h3',{},[el('span',{class:'wb-tag'},'A'),'Pick Up From']),
+        el('div',{class:'grid g2'},[field('shipper_first','First name',{ph:'John'}),field('shipper_last','Last name',{ph:'Brown'})]),
+        el('div',{class:'grid g2'},[field('shipper_phone','Phone',{type:'tel'}),field('shipper_email','Email',{type:'email'})]),
+        field('from_address','Street address',{ph:'House / street'}),
+        el('div',{class:'grid g2'},[field('from_city','City'),field('from_state','State / Region')]),
+        el('div',{class:'grid g2'},[field('from_zip','Postal code'),field('from_country','Country')]),
+        el('div',{class:'grid g2 wb-when'},[field('pickup_date','Pick-up date',{type:'date'}),field('pickup_time','Pick-up time',{options:['','Morning (8am–12pm)','Afternoon (12pm–5pm)','Evening (5pm–8pm)','Anytime']})]),
+        el('p',{class:'hint'},'Choose the date and time window you would like your barrels / boxes collected.')]),
+      el('div',{class:'card wb-box wb-to'},[el('h3',{},[el('span',{class:'wb-tag'},'B'),'Deliver To']),
+        el('div',{class:'grid g2'},[field('consignee_first','First name'),field('consignee_last','Last name')]),
+        el('div',{class:'grid g2'},[field('consignee_phone','Phone',{type:'tel'}),field('consignee_email','Email',{type:'email'})]),
+        field('to_address','Street address',{ph:'House / street'}),
+        el('div',{class:'grid g2'},[field('to_city','City / Town'),field('to_state','State / Region')]),
+        el('div',{class:'grid g2'},[field('to_zip','Postal code'),field('to_country','Country')]),
+        field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown, St George'})])]));
+    form.append(el('div',{class:'card'},[el('h3',{},'Office use — tracking'),el('div',{class:'grid g3'},[
+      field('bl_number','BL / Booking #',{ro:true}),
+      statusReadonly(s.status),
+      field('ship_date','Ship date',{type:'date',ro:true,hint:'Set by the office once booked.'})]),
+      el('p',{class:'hint'},'The booking number, ship date and status are filled in by the shipping office after you book.'),
+      field('notes','Special instructions / notes',{type:'textarea'})]));
+  }
 
   // items
   const tbody=el('tbody');const totalsBar=el('div',{class:'totals'});const itemsState=[];
@@ -368,7 +426,9 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
       el('td',{},bind('rate',{type:'number',min:0,step:'0.01',class:'cell-sm'})),
       el('td',{},el('b',{'data-charge':idx},money(p.charge))),
       el('td',{},el('button',{class:'btn danger sm',onclick:()=>{itemsState.splice(idx,1);renderItems();}},'✕'))]);}
-  function recompute(){let pieces=0,weight=0,value=0,charge=0;itemsState.forEach((it,idx)=>{const p=priceRow(it);const q=Math.max(0,Math.min(100,+it.quantity||0));pieces+=q;weight+=(+it.weight||0)*q;value+=(+it.declared_value||0)*q;charge+=p.charge;const cell=tbody.querySelector(`[data-charge="${idx}"]`);if(cell)cell.textContent=money(p.charge);const vcell=tbody.querySelector(`[data-vol="${idx}"]`);if(vcell)vcell.textContent=it.pricing_mode==='flat'?'flat':`${p.volume} ${p.unit}`;});totalsBar.innerHTML='';totalsBar.append(chip('Pieces',pieces),chip('Weight',weight.toFixed(1)),chip('Declared value',money(value)),chip('Total charge',money(charge)));}
+  function recompute(){let pieces=0,weight=0,value=0,charge=0;itemsState.forEach((it,idx)=>{const p=priceRow(it);const q=Math.max(0,Math.min(100,+it.quantity||0));pieces+=q;weight+=(+it.weight||0)*q;value+=(+it.declared_value||0)*q;charge+=p.charge;const cell=tbody.querySelector(`[data-charge="${idx}"]`);if(cell)cell.textContent=money(p.charge);const vcell=tbody.querySelector(`[data-vol="${idx}"]`);if(vcell)vcell.textContent=it.pricing_mode==='flat'?'flat':`${p.volume} ${p.unit}`;});totalsBar.innerHTML='';totalsBar.append(chip('Pieces',pieces),chip('Weight',weight.toFixed(1)),chip('Declared value',money(value)),chip('Total charge',money(charge)));
+    if(chargesEl)chargesEl.textContent=money(charge);
+    if(profitEl){const cost=+((F.total_cost&&F.total_cost.value)||0)||0;profitEl.textContent=money(charge-cost);}}
   const chip=(l,v)=>el('div',{class:'totchip'},[el('b',{},String(v)),el('span',{},l)]);
   (s.items||[]).forEach(it=>itemsState.push({...it}));
   form.append(el('div',{class:'card'},[el('div',{class:'toolbar'},[el('h3',{style:'margin:0'},'Items being sent'),
@@ -379,7 +439,7 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
 
   function statusReadonly(v){return el('div',{},[el('label',{},'Status'),el('div',{style:'padding-top:4px'},[el('span',{class:'pill '+(v||'Draft')},v||'Draft')])]);}
   async function doSave(){const payload={};
-    ['shipper_first','shipper_last','shipper_phone','shipper_email','from_address','from_city','from_state','from_zip','from_country','consignee_first','consignee_last','consignee_phone','consignee_email','to_address','to_city','to_state','to_zip','to_country','bl_number','pickup_date','pickup_time','ship_date','dest_port','notes'].forEach(k=>payload[k]=F[k]?F[k].value:(s[k]??null));
+    ['shipper_first','shipper_last','shipper_phone','shipper_email','from_address','from_city','from_state','from_zip','from_country','consignee_first','consignee_last','consignee_phone','consignee_email','to_address','to_city','to_state','to_zip','to_country','bl_number','pickup_date','pickup_time','ship_date','dest_port','notes','origin','called_in_by','signed_date','signed_time','signed_by','invoice_number','invoice_date','deliver_time','from_company','from_other','from_ref','from_close','to_company','to_other','to_ref','to_close','contents','special_instructions','billto_name','billto_contact','billto_address','service_request','payment_method','total_cost'].forEach(k=>payload[k]=F[k]?F[k].value:(s[k]??null));
     payload.shipper_name=[payload.shipper_first,payload.shipper_last].filter(Boolean).join(' ').trim();
     payload.consignee_name=[payload.consignee_first,payload.consignee_last].filter(Boolean).join(' ').trim();
     if(staff){payload.status=F.status?F.status.value:'Draft';payload.client_id=F._client&&F._client.value?Number(F._client.value):null;payload.owner_client_id=payload.client_id;}

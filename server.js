@@ -54,6 +54,13 @@ const SHIP_COLS = [
   'consignee_first', 'consignee_last', 'consignee_name', 'consignee_phone', 'consignee_email',
   'to_address', 'to_city', 'to_state', 'to_zip', 'to_country',
   'bl_number', 'pickup_date', 'pickup_time', 'ship_date', 'dest_port', 'status', 'notes',
+  'origin', 'called_in_by', 'signed_date', 'signed_time', 'signed_by',
+  'invoice_number', 'invoice_date', 'deliver_time',
+  'from_company', 'from_other', 'from_ref', 'from_close',
+  'to_company', 'to_other', 'to_ref', 'to_close',
+  'contents', 'special_instructions',
+  'billto_name', 'billto_contact', 'billto_address',
+  'service_request', 'payment_method', 'total_cost',
 ];
 const ITEM_COLS = [
   'item_type', 'description', 'quantity', 'length', 'width', 'height', 'dim_unit',
