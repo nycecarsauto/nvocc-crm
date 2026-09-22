@@ -41,6 +41,17 @@
   td input,td select{padding:7px 8px;font-size:13px}.cell-sm{width:74px}.cell-xs{width:58px}
   .type-barrel{border-left:3px solid var(--warn)}.type-box{border-left:3px solid var(--brand)}.type-other{border-left:3px solid var(--accent)}
   .muted{color:var(--muted)}
+  /* waybill */
+  .waybill-head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;border-radius:14px;padding:16px 22px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .wh-title{font-size:22px;font-weight:800;letter-spacing:3px}.wh-sub{font-size:12px;opacity:.75;letter-spacing:.5px}
+  .wh-meta{display:flex;gap:26px;flex-wrap:wrap}.wh-meta>div{display:flex;flex-direction:column}
+  .wh-meta span{font-size:10px;text-transform:uppercase;letter-spacing:.6px;opacity:.7}.wh-meta b{font-size:15px}
+  .wb-box{padding:0;overflow:hidden}.wb-box h3{display:flex;align-items:center;gap:10px;margin:0;padding:12px 18px;color:#fff;font-size:15px}
+  .wb-box>*:not(h3){margin-left:18px;margin-right:18px}.wb-box>*:nth-child(2){margin-top:16px}.wb-box>*:last-child{margin-bottom:18px}
+  .wb-from h3{background:var(--warn)}.wb-to h3{background:var(--brand)}
+  .wb-tag{display:inline-flex;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25);align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .wb-when{margin-top:6px;padding-top:12px;border-top:1px dashed var(--line)}
+  @media(max-width:720px){.waybill-cols{grid-template-columns:1fr}.wh-meta{gap:16px}}
   .totchip{display:inline-flex;flex-direction:column;background:var(--chip);border-radius:11px;padding:10px 16px;min-width:120px}
   .totchip b{font-size:20px}.totchip span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
   .totals{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
@@ -274,7 +285,7 @@ const stat=(l,v)=>el('div',{class:'card',style:'text-align:center'},[el('div',{s
 views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.stringify(shipment)):{status:'Draft',items:[]};const editing=!!s.id;const staff=isStaff();
   const mine=!staff; const form=el('div',{});
   form.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},editing?`Edit Shipment #${s.id}`:'New Shipment Intake'),
-    el('p',{class:'sub'},'Capture the shipper, consignee, tracking details and every barrel / box being sent.')]),
+    el('p',{class:'sub'},'Enter your pick-up and delivery details, choose when to be collected, and list every barrel / box being sent.')]),
     el('div',{class:'row-actions'},[
       editing?el('button',{class:'btn ghost',onclick:()=>openInvoice(s.id)},'🧾 Invoice'):null,
       editing?el('button',{class:'btn ghost',onclick:()=>openLabels(s.id)},'🏷 Print labels'):null,
@@ -298,29 +309,41 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
     s.from_address=s.from_address||c.address;s.from_city=s.from_city||c.city;s.from_country=s.from_country||c.country;
   }
 
-  form.append(el('div',{class:'grid g2'},[
-    el('div',{class:'card type-barrel'},[el('h3',{},'Shipper — FROM'),
+  // ---- Waybill header strip ----
+  const orderDate=(s.created_at||'').slice(0,10)||new Date().toISOString().slice(0,10);
+  form.append(el('div',{class:'waybill-head'},[
+    el('div',{class:'wh-brand'},[el('div',{class:'wh-title'},'WAYBILL'),el('div',{class:'wh-sub'},'Pick-up booking form')]),
+    el('div',{class:'wh-meta'},[
+      el('div',{},[el('span',{},'Waybill / Booking #'),el('b',{},s.bl_number||'— assigned on save —')]),
+      el('div',{},[el('span',{},'Order date'),el('b',{},orderDate)]),
+      el('div',{},[el('span',{},'Status'),el('b',{},s.status||'Draft')])])]));
+
+  // ---- Pick Up From / Deliver To (mirrors the waybill input form) ----
+  form.append(el('div',{class:'grid g2 waybill-cols'},[
+    el('div',{class:'card wb-box wb-from'},[el('h3',{},[el('span',{class:'wb-tag'},'A'),'Pick Up From']),
       el('div',{class:'grid g2'},[field('shipper_first','First name',{ph:'John'}),field('shipper_last','Last name',{ph:'Brown'})]),
       el('div',{class:'grid g2'},[field('shipper_phone','Phone',{type:'tel'}),field('shipper_email','Email',{type:'email'})]),
-      field('from_address','Address',{ph:'Street address'}),
+      field('from_address','Street address',{ph:'House / street'}),
       el('div',{class:'grid g2'},[field('from_city','City'),field('from_state','State / Region')]),
-      el('div',{class:'grid g2'},[field('from_zip','Postal code'),field('from_country','Country')])]),
-    el('div',{class:'card type-box'},[el('h3',{},'Consignee — TO'),
+      el('div',{class:'grid g2'},[field('from_zip','Postal code'),field('from_country','Country')]),
+      el('div',{class:'grid g2 wb-when'},[field('pickup_date','Pick-up date',{type:'date'}),field('pickup_time','Pick-up time',{options:['','Morning (8am–12pm)','Afternoon (12pm–5pm)','Evening (5pm–8pm)','Anytime']})]),
+      el('p',{class:'hint'},'Choose the date and time window you would like your barrels / boxes collected.')]),
+    el('div',{class:'card wb-box wb-to'},[el('h3',{},[el('span',{class:'wb-tag'},'B'),'Deliver To']),
       el('div',{class:'grid g2'},[field('consignee_first','First name'),field('consignee_last','Last name')]),
       el('div',{class:'grid g2'},[field('consignee_phone','Phone',{type:'tel'}),field('consignee_email','Email',{type:'email'})]),
-      field('to_address','Address',{ph:'Street address'}),
-      el('div',{class:'grid g2'},[field('to_city','City'),field('to_state','State / Region')]),
-      el('div',{class:'grid g2'},[field('to_zip','Postal code'),field('to_country','Country')])])]));
+      field('to_address','Street address',{ph:'House / street'}),
+      el('div',{class:'grid g2'},[field('to_city','City / Town'),field('to_state','State / Region')]),
+      el('div',{class:'grid g2'},[field('to_zip','Postal code'),field('to_country','Country')]),
+      field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown, St George'})])]));
 
+  // ---- Office use / tracking ----
   const trackFields=[
-    field('pickup_date','Requested pick-up date',{type:'date',hint:'The date you would like your shipment collected.'}),
     field('bl_number','BL / Booking #',{ro:mine}),
     staff?field('status','Status',{options:['Draft','Booked','Shipped','Delivered']}):statusReadonly(s.status),
-    field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown'}),
     field('ship_date','Ship date',{type:'date',ro:mine,hint:mine?'Set by the office once booked.':''})];
-  form.append(el('div',{class:'card'},[el('h3',{},'Shipment & tracking'),el('div',{class:'grid g3'},trackFields),
-    mine?el('p',{class:'hint'},'Tracking details and status are filled in by the shipping office after you book.'):null,
-    field('notes','Notes',{type:'textarea'})]));
+  form.append(el('div',{class:'card'},[el('h3',{},'Office use — tracking'),el('div',{class:'grid g3'},trackFields),
+    mine?el('p',{class:'hint'},'The booking number, ship date and status are filled in by the shipping office after you book.'):null,
+    field('notes','Special instructions / notes',{type:'textarea'})]));
 
   // items
   const tbody=el('tbody');const totalsBar=el('div',{class:'totals'});const itemsState=[];
@@ -356,7 +379,7 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
 
   function statusReadonly(v){return el('div',{},[el('label',{},'Status'),el('div',{style:'padding-top:4px'},[el('span',{class:'pill '+(v||'Draft')},v||'Draft')])]);}
   async function doSave(){const payload={};
-    ['shipper_first','shipper_last','shipper_phone','shipper_email','from_address','from_city','from_state','from_zip','from_country','consignee_first','consignee_last','consignee_phone','consignee_email','to_address','to_city','to_state','to_zip','to_country','bl_number','pickup_date','ship_date','dest_port','notes'].forEach(k=>payload[k]=F[k]?F[k].value:(s[k]??null));
+    ['shipper_first','shipper_last','shipper_phone','shipper_email','from_address','from_city','from_state','from_zip','from_country','consignee_first','consignee_last','consignee_phone','consignee_email','to_address','to_city','to_state','to_zip','to_country','bl_number','pickup_date','pickup_time','ship_date','dest_port','notes'].forEach(k=>payload[k]=F[k]?F[k].value:(s[k]??null));
     payload.shipper_name=[payload.shipper_first,payload.shipper_last].filter(Boolean).join(' ').trim();
     payload.consignee_name=[payload.consignee_first,payload.consignee_last].filter(Boolean).join(' ').trim();
     if(staff){payload.status=F.status?F.status.value:'Draft';payload.client_id=F._client&&F._client.value?Number(F._client.value):null;payload.owner_client_id=payload.client_id;}

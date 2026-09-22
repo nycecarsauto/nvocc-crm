@@ -53,7 +53,7 @@ const SHIP_COLS = [
   'from_address', 'from_city', 'from_state', 'from_zip', 'from_country',
   'consignee_first', 'consignee_last', 'consignee_name', 'consignee_phone', 'consignee_email',
   'to_address', 'to_city', 'to_state', 'to_zip', 'to_country',
-  'bl_number', 'pickup_date', 'ship_date', 'dest_port', 'status', 'notes',
+  'bl_number', 'pickup_date', 'pickup_time', 'ship_date', 'dest_port', 'status', 'notes',
 ];
 const ITEM_COLS = [
   'item_type', 'description', 'quantity', 'length', 'width', 'height', 'dim_unit',

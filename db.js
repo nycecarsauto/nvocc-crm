@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS shipments (
   -- Shipment / tracking
   bl_number          TEXT,
   pickup_date        TEXT,          -- date the CUSTOMER requests pickup
+  pickup_time        TEXT,          -- preferred pickup time window
   ship_date          TEXT,
   dest_port          TEXT,
   carrier            TEXT,
@@ -148,6 +149,7 @@ for (const stmt of [
   "ALTER TABLE shipments ADD COLUMN owner_client_id INTEGER",
   "ALTER TABLE shipments ADD COLUMN created_by INTEGER",
   "ALTER TABLE shipments ADD COLUMN pickup_date TEXT",
+  "ALTER TABLE shipments ADD COLUMN pickup_time TEXT",
   "ALTER TABLE shipments ADD COLUMN shipper_first TEXT",
   "ALTER TABLE shipments ADD COLUMN shipper_last TEXT",
   "ALTER TABLE shipments ADD COLUMN from_city TEXT",
