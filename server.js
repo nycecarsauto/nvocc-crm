@@ -61,7 +61,10 @@ const SHIP_COLS = [
   'contents', 'special_instructions',
   'billto_name', 'billto_contact', 'billto_address',
   'service_request', 'payment_method', 'total_cost',
+  'driver', 'ready_at', 'close_at', 'conf_pieces', 'conf_weight', 'conf_unit', 'dispatch_status',
 ];
+const AGENT_COLS = ['location', 'name', 'attention', 'address', 'city', 'state', 'zip', 'phone', 'fax', 'comments'];
+const PAYMENT_COLS = ['client_id', 'kind', 'pay_date', 'check_number', 'amount', 'invoice_ref', 'memo'];
 const ITEM_COLS = [
   'item_type', 'description', 'quantity', 'length', 'width', 'height', 'dim_unit',
   'weight', 'weight_unit', 'declared_value', 'pricing_mode', 'rate', 'volume_each', 'volume_unit', 'line_charge', 'sort_order',
@@ -278,6 +281,31 @@ async function api(req, res, pathname, method) {
       db.prepare('DELETE FROM shipments WHERE id=?').run(id);
       return sendJSON(res, 200, { ok: true });
     }
+  }
+
+  /* agents (staff only) */
+  if (resource === 'agents') {
+    if (!isStaff) return sendJSON(res, 403, { error: 'Staff only' });
+    if (method === 'GET' && !id) return sendJSON(res, 200, db.prepare('SELECT * FROM agents ORDER BY name').all());
+    if (method === 'GET' && id) { const a = db.prepare('SELECT * FROM agents WHERE id=?').get(id); return a ? sendJSON(res, 200, a) : sendJSON(res, 404, { error: 'Not found' }); }
+    if (method === 'POST') { if (!body.name) return sendJSON(res, 400, { error: 'Agent name is required' }); const r = insertRow('agents', AGENT_COLS, body); return sendJSON(res, 201, db.prepare('SELECT * FROM agents WHERE id=?').get(r.lastInsertRowid)); }
+    if (method === 'PUT' && id) { db.prepare(`UPDATE agents SET ${AGENT_COLS.map(c => `${c}=@${c}`).join(',')} WHERE id=@id`).run({ ...pick(body, AGENT_COLS), id }); return sendJSON(res, 200, db.prepare('SELECT * FROM agents WHERE id=?').get(id)); }
+    if (method === 'DELETE' && id) { db.prepare('DELETE FROM agents WHERE id=?').run(id); return sendJSON(res, 200, { ok: true }); }
+  }
+
+  /* payments — cash receipts & credit memos (staff only) */
+  if (resource === 'payments') {
+    if (!isStaff) return sendJSON(res, 403, { error: 'Staff only' });
+    if (method === 'GET' && !id) return sendJSON(res, 200, db.prepare(
+      `SELECT p.*, c.name AS client_name FROM payments p LEFT JOIN clients c ON c.id=p.client_id ORDER BY p.pay_date DESC, p.id DESC`).all());
+    if (method === 'POST') {
+      body.client_id = body.client_id ? Number(body.client_id) : null;
+      body.amount = Number(body.amount) || 0;
+      body.kind = body.kind === 'credit' ? 'credit' : 'receipt';
+      const r = insertRow('payments', PAYMENT_COLS, body);
+      return sendJSON(res, 201, db.prepare('SELECT * FROM payments WHERE id=?').get(r.lastInsertRowid));
+    }
+    if (method === 'DELETE' && id) { db.prepare('DELETE FROM payments WHERE id=?').run(id); return sendJSON(res, 200, { ok: true }); }
   }
 
   return sendJSON(res, 404, { error: 'Unknown endpoint' });

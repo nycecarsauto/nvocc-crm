@@ -111,6 +111,15 @@ CREATE TABLE IF NOT EXISTS shipments (
   service_request    TEXT,
   payment_method     TEXT,
 
+  -- Dispatch tracking (dispatch board)
+  driver             TEXT,
+  ready_at           TEXT,
+  close_at           TEXT,
+  conf_pieces        INTEGER,
+  conf_weight        REAL,
+  conf_unit          TEXT DEFAULT 'lb',
+  dispatch_status    TEXT,          -- 'Unassigned' | 'Assigned' | 'Picked up' | 'Delivered'
+
   -- Pricing snapshot (authoritative, recomputed from items on save)
   total_pieces       INTEGER NOT NULL DEFAULT 0,
   total_weight       REAL NOT NULL DEFAULT 0,
@@ -151,6 +160,36 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE INDEX IF NOT EXISTS idx_items_shipment ON items(shipment_id);
 CREATE INDEX IF NOT EXISTS idx_shipments_client ON shipments(client_id);
+
+-- Pickup / delivery agents (mirrors the waybill program's Agents)
+CREATE TABLE IF NOT EXISTS agents (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  location    TEXT,               -- location / airport code
+  name        TEXT NOT NULL,
+  attention   TEXT,
+  address     TEXT,
+  city        TEXT,
+  state       TEXT,
+  zip         TEXT,
+  phone       TEXT,
+  fax         TEXT,
+  comments    TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Accounting: cash receipts & credit memos
+CREATE TABLE IF NOT EXISTS payments (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id     INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+  kind          TEXT NOT NULL DEFAULT 'receipt',  -- 'receipt' | 'credit'
+  pay_date      TEXT,
+  check_number  TEXT,
+  amount        REAL NOT NULL DEFAULT 0,
+  invoice_ref   TEXT,             -- waybill / invoice number this applies to
+  memo          TEXT,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_payments_client ON payments(client_id);
 
 -- App-wide default rates (single row, id = 1)
 CREATE TABLE IF NOT EXISTS settings (
@@ -200,6 +239,13 @@ for (const stmt of [
   "ALTER TABLE shipments ADD COLUMN service_request TEXT",
   "ALTER TABLE shipments ADD COLUMN payment_method TEXT",
   "ALTER TABLE shipments ADD COLUMN total_cost REAL DEFAULT 0",
+  "ALTER TABLE shipments ADD COLUMN driver TEXT",
+  "ALTER TABLE shipments ADD COLUMN ready_at TEXT",
+  "ALTER TABLE shipments ADD COLUMN close_at TEXT",
+  "ALTER TABLE shipments ADD COLUMN conf_pieces INTEGER",
+  "ALTER TABLE shipments ADD COLUMN conf_weight REAL",
+  "ALTER TABLE shipments ADD COLUMN conf_unit TEXT DEFAULT 'lb'",
+  "ALTER TABLE shipments ADD COLUMN dispatch_status TEXT",
   "ALTER TABLE shipments ADD COLUMN shipper_first TEXT",
   "ALTER TABLE shipments ADD COLUMN shipper_last TEXT",
   "ALTER TABLE shipments ADD COLUMN from_city TEXT",

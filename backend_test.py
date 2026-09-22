@@ -129,6 +129,18 @@ missing = [k for k in need if not inv.get(k)]
 check("shipment carries all invoice fields", not missing, f"missing: {missing}")
 check("invoice items have line_charge", all("line_charge" in it for it in inv.get("items",[])), "")
 
+s,ag = admin.req("POST","/api/agents",{"name":"Grenada Delivery Svc","location":"GND","attention":"Bruno","city":"St George","phone":"473-111"})
+check("staff creates agent", s==201 and ag.get("id") and ag.get("name")=="Grenada Delivery Svc", f"http {s} {ag}")
+s,agl = admin.req("GET","/api/agents"); check("staff lists agents", isinstance(agl,list) and len(agl)>=1, f"{agl}")
+s,_ = c1.req("GET","/api/agents"); check("customer blocked from agents (403)", s==403, f"http {s}")
+s,pay = admin.req("POST","/api/payments",{"client_id":None,"kind":"receipt","pay_date":"2026-09-22","check_number":"1001","amount":150,"invoice_ref":"NV000001","memo":"partial"})
+check("staff creates cash receipt", s==201 and float(pay.get("amount") or 0)==150, f"http {s} {pay}")
+s,payl = admin.req("GET","/api/payments"); check("staff lists payments", isinstance(payl,list) and len(payl)>=1, f"{payl}")
+s,_ = c1.req("GET","/api/payments"); check("customer blocked from payments (403)", s==403, f"http {s}")
+s,dsp = admin.req("PUT",f"/api/shipments/{sid1}",{"driver":"Marcus","dispatch_status":"Assigned","conf_pieces":5})
+check("dispatch fields save on waybill", dsp.get("driver")=="Marcus" and dsp.get("dispatch_status")=="Assigned" and dsp.get("conf_pieces")==5, f"{dsp.get('driver')}/{dsp.get('dispatch_status')}/{dsp.get('conf_pieces')}")
+check("dispatch PUT preserves waybill fields", dsp.get("bl_number")=="NV000001" and dsp.get("from_city")=="Queens", f"{dsp.get('bl_number')}/{dsp.get('from_city')}")
+
 print("\n================= RESULTS =================")
 for ok,name,detail in results:
     print(f"  [{'PASS' if ok else 'FAIL'}] {name}" + (f"   -> {detail}" if not ok else ""))

@@ -12,7 +12,7 @@
   header .logo{font-weight:700;letter-spacing:.3px;font-size:18px;display:flex;align-items:center;gap:9px}
   header .logo .badge{background:var(--brand);border-radius:7px;padding:3px 8px;font-size:12px}
   nav{display:flex;gap:4px;margin-left:8px;flex-wrap:wrap}
-  nav button{background:transparent;color:#cbd5e1;border:0;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500}
+  nav button{background:transparent;color:#cbd5e1;border:0;padding:7px 11px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:500}
   nav button:hover{background:#1e293b;color:#fff} nav button.active{background:var(--brand);color:#fff}
   .spacer{flex:1}
   .whoami{color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:10px}
@@ -70,6 +70,19 @@
   .wb-lbl{text-align:center;font-size:12px;color:var(--muted);font-weight:600}
   .wb-cell{min-width:0}
   @media(max-width:720px){.wb-head-row,.wb-row{grid-template-columns:1fr;gap:4px}.wb-lbl{text-align:left;font-weight:700;color:var(--ink);margin-top:8px}.wb-money{grid-template-columns:1fr}}
+  /* house bill / declaration print docs */
+  .hb{padding:22px 26px}
+  .hb-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:12px}
+  .hb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .hb-box{border:1px solid #000;padding:8px 10px;min-height:92px}
+  .hb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;border-bottom:1px solid #ccc;margin-bottom:4px;padding-bottom:2px}
+  .hb-party div,.hb-box div{font-size:12px;line-height:1.4}
+  .hb-meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:12px;margin-bottom:12px}
+  .hb-note{font-size:12px;margin:10px 0;padding:8px;background:#f8f8f8;border:1px solid #ddd}
+  /* reports */
+  .rep-wrap{display:flex;gap:16px;align-items:flex-start}
+  .rep-menu{width:210px;flex:none}
+  @media(max-width:720px){.rep-wrap{flex-direction:column}.rep-menu{width:100%}.hb-grid{grid-template-columns:1fr}}
   .totchip{display:inline-flex;flex-direction:column;background:var(--chip);border-radius:11px;padding:10px 16px;min-width:120px}
   .totchip b{font-size:20px}.totchip span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
   .totals{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
@@ -266,7 +279,7 @@ function renderAuth(mode='login'){
 /* ================= app shell ================= */
 const views={};
 function navItems(){return isStaff()
-  ?[['dash','Dashboard'],['intake','New Shipment'],['shipments','Shipments'],['clients','Clients'],['accounts','Accounts'],['settings','Settings']]
+  ?[['dash','Dashboard'],['intake','New Waybill'],['shipments','Waybills'],['clients','Customers'],['agents','Agents'],['dispatch','Dispatching'],['forms','Forms'],['accounting','Accounting'],['reports','Reports'],['accounts','Accounts'],['settings','Setup']]
   :[['dash','Dashboard'],['intake','New Shipment'],['shipments','My Shipments'],['profile','My Profile']];}
 function renderApp(){
   document.body.className='';
@@ -293,7 +306,7 @@ views.dash=async()=>{const app=$('#app');
     :[stat('My shipments',stats.shipments),stat('My pieces',stats.pieces),stat('My charges',money(stats.revenue))];
   app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},isStaff()?'Dashboard':`Welcome, ${ME.user.name||ME.user.username}`),
     el('p',{class:'sub'},isStaff()?'Overview of your freight operations':'Your shipments at a glance')]),
-    el('button',{class:'btn primary',onclick:()=>go('intake')},'+ New Shipment')]),
+    el('button',{class:'btn primary',onclick:()=>go('intake')},isStaff()?'+ New Waybill':'+ New Shipment')]),
     el('div',{class:'grid '+(isStaff()?'g4':'g3')},cards));
   const ships=await api('/api/shipments').catch(()=>[]);
   app.append(el('div',{class:'card'},[el('h3',{},isStaff()?'Recent shipments':'My recent shipments'),shipTable(ships.slice(0,8))]));};
@@ -452,7 +465,7 @@ async function delShipment(id){if(!confirm('Delete this shipment? This cannot be
 
 /* ================= shipments list ================= */
 views.shipments=async()=>{const app=$('#app');
-  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},isStaff()?'Shipments':'My Shipments'),el('p',{class:'sub'},isStaff()?'All bookings, newest first':'Your bookings and their status')]),el('button',{class:'btn primary',onclick:()=>go('intake')},'+ New Shipment')]));
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},isStaff()?'Waybills':'My Shipments'),el('p',{class:'sub'},isStaff()?'All waybills, newest first':'Your bookings and their status')]),el('button',{class:'btn primary',onclick:()=>go('intake')},isStaff()?'+ New Waybill':'+ New Shipment')]));
   const ships=await api('/api/shipments').catch(()=>[]);app.append(el('div',{class:'card'},[shipTable(ships,true)]));};
 function shipTable(ships,withActions){if(!ships.length)return el('div',{class:'empty'},'No shipments yet. Click “New Shipment” to create your first booking.');
   const rows=ships.map(s=>el('tr',{},[
@@ -535,7 +548,7 @@ async function openInvoice(id){let s;try{s=await api('/api/shipments/'+id);}catc
 
 /* ================= clients (staff) ================= */
 views.clients=async()=>{const app=$('#app');clients=await api('/api/clients').catch(()=>[]);
-  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Clients'),el('p',{class:'sub'},'Your customer directory')]),el('button',{class:'btn primary',onclick:()=>clientForm()},'+ Add client')]));
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Customers'),el('p',{class:'sub'},'Your customer directory')]),el('button',{class:'btn primary',onclick:()=>clientForm()},'+ Add customer')]));
   if(!clients.length){app.append(el('div',{class:'card empty'},'No clients yet.'));return;}
   const rows=clients.map(c=>el('tr',{onclick:()=>clientForm(c)},[el('td',{},el('b',{},c.name)),el('td',{},c.phone||'—'),el('td',{},c.email||'—'),el('td',{},c.id_number||'—'),el('td',{},[c.city,c.country].filter(Boolean).join(', ')||'—')]));
   app.append(el('div',{class:'card'},[el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Name','Phone','Email','ID / Passport','Location'].map(h=>el('th',{},h)))),el('tbody',{},rows)])]));};
@@ -572,7 +585,7 @@ function passwordCard(){const P={};const f=(k,l)=>{const i=el('input',{type:'pas
 views.settings=async()=>{const app=$('#app');settings=await api('/api/settings');const F={};
   const f=(k,l,hint)=>{const i=el('input',{type:'number',step:'0.01',value:settings[k]});F[k]=i;return el('div',{},[el('label',{},l),i,hint?el('div',{class:'hint'},hint):null]);};
   const tf=(k,l)=>{const i=el('input',{type:'text',value:settings[k]==null?'':settings[k]});F[k]=i;return el('div',{},[el('label',{},l),i]);};
-  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Settings'),el('p',{class:'sub'},'Rates, currency, and the company details shown on invoices')])]));
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Setup / Utilities'),el('p',{class:'sub'},'Rates, currency, and the company details shown on invoices')])]));
   const curSel=el('select',{},['USD','JMD','GBP','EUR','TTD','GYD','XOF','NGN'].map(x=>el('option',{value:x,selected:x===settings.currency?'selected':null},x)));
   const save=async()=>{try{settings=await api('/api/settings',{method:'PUT',body:JSON.stringify({default_barrel_rate:F.default_barrel_rate.value,default_volume_rate:F.default_volume_rate.value,currency:curSel.value,company_name:F.company_name.value,company_tagline:F.company_tagline.value,company_agent:F.company_agent.value,company_address:F.company_address.value,company_phone:F.company_phone.value,company_email:F.company_email.value,invoice_terms:F.invoice_terms.value})});flash('Settings saved');}catch(e){flash(e.message,true);}};
   app.append(el('div',{class:'card'},[el('h3',{},'Rates & currency'),el('div',{class:'grid g3'},[f('default_barrel_rate','Flat rate per barrel','Charged per barrel regardless of size'),f('default_volume_rate','Volume rate','Per ft³ (inches) or per CBM (cm)'),el('div',{},[el('label',{},'Currency'),curSel])])]));
@@ -583,6 +596,109 @@ views.settings=async()=>{const app=$('#app');settings=await api('/api/settings')
     tf('invoice_terms','Invoice terms line'),
     el('div',{class:'divider'}),el('button',{class:'btn primary',onclick:save},'Save settings')]));
   app.append(passwordCard());};
+
+/* ================= agents (staff) ================= */
+views.agents=async()=>{const app=$('#app');const agents=await api('/api/agents').catch(()=>[]);
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Agents'),el('p',{class:'sub'},'Pick-up & delivery agents')]),el('button',{class:'btn primary',onclick:()=>agentForm()},'+ Add agent')]));
+  if(!agents.length){app.append(el('div',{class:'card empty'},'No agents yet.'));return;}
+  const rows=agents.map(a=>el('tr',{onclick:()=>agentForm(a)},[el('td',{},el('b',{},a.name)),el('td',{},a.location||'—'),el('td',{},a.attention||'—'),el('td',{},[a.city,a.state,a.zip].filter(Boolean).join(', ')||'—'),el('td',{},a.phone||'—')]));
+  app.append(el('div',{class:'card'},[el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Agent','Location','Attention','City / State','Phone'].map(h=>el('th',{},h)))),el('tbody',{},rows)])]));};
+function agentForm(a){const editing=!!(a&&a.id);a=a?{...a}:{};const app=$('#app');app.innerHTML='';const F={};
+  const f=(k,l,o={})=>{const i=o.type==='textarea'?el('textarea',{}):el('input',{type:o.type||'text'});F[k]=i;if(a[k]!=null)i.value=a[k];return el('div',{},[el('label',{},l),i]);};
+  app.append(el('div',{class:'toolbar'},[el('h2',{},editing?'Edit agent':'Add agent'),el('div',{class:'row-actions'},[editing?el('button',{class:'btn danger',onclick:async()=>{if(confirm('Delete agent?')){await api('/api/agents/'+a.id,{method:'DELETE'});go('agents');}}},'Delete'):null,el('button',{class:'btn ghost',onclick:()=>go('agents')},'Cancel'),el('button',{class:'btn primary',onclick:doSave},'Save')])]));
+  app.append(el('div',{class:'card'},[el('div',{class:'grid g2'},[f('name','Agent name'),f('location','Location / code')]),f('attention','Attention'),f('address','Address',{type:'textarea'}),el('div',{class:'grid g3'},[f('city','City'),f('state','State'),f('zip','Zip')]),el('div',{class:'grid g2'},[f('phone','Phone',{type:'tel'}),f('fax','Fax')]),f('comments','Comments',{type:'textarea'})]));
+  async function doSave(){const data={};['name','location','attention','address','city','state','zip','phone','fax','comments'].forEach(k=>data[k]=F[k].value);if(!data.name){flash('Agent name required',true);return;}try{a.id?await api('/api/agents/'+a.id,{method:'PUT',body:JSON.stringify(data)}):await api('/api/agents',{method:'POST',body:JSON.stringify(data)});flash('Agent saved');go('agents');}catch(e){flash(e.message,true);}}}
+
+/* ================= dispatching (staff) ================= */
+views.dispatch=async()=>{const app=$('#app');const ships=await api('/api/shipments').catch(()=>[]);
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Dispatching'),el('p',{class:'sub'},'Assign drivers and track pick-ups / deliveries')])]));
+  if(!ships.length){app.append(el('div',{class:'card empty'},'No waybills to dispatch yet.'));return;}
+  const dstat=['Unassigned','Assigned','Picked up','Delivered'];
+  const rows=ships.map(s=>{
+    const driver=el('input',{value:s.driver||'',style:'width:110px'});
+    const ready=el('input',{value:s.ready_at||'',placeholder:'date / time',style:'width:120px'});
+    const close=el('input',{value:s.close_at||'',placeholder:'close',style:'width:90px'});
+    const cp=el('input',{type:'number',value:s.conf_pieces??'',style:'width:64px'});
+    const cw=el('input',{type:'number',value:s.conf_weight??'',style:'width:74px'});
+    const sel=el('select',{},dstat.map(d=>el('option',{value:d,selected:d===(s.dispatch_status||'Unassigned')?'selected':null},d)));
+    const saveBtn=el('button',{class:'btn ghost sm',onclick:async()=>{try{await api('/api/shipments/'+s.id,{method:'PUT',body:JSON.stringify({driver:driver.value,ready_at:ready.value,close_at:close.value,conf_pieces:cp.value,conf_weight:cw.value,dispatch_status:sel.value})});flash('Dispatch saved for '+(s.bl_number||('#'+s.id)));}catch(e){flash(e.message,true);}}},'Save');
+    return el('tr',{},[el('td',{style:'cursor:pointer;font-weight:600',onclick:()=>openShipment(s.id)},s.bl_number||('#'+s.id)),el('td',{},[el('div',{style:'font-weight:600'},s.shipper_name||'—'),el('div',{class:'muted',style:'font-size:12px'},'→ '+(s.consignee_name||'—'))]),el('td',{},driver),el('td',{},ready),el('td',{},close),el('td',{},cp),el('td',{},cw),el('td',{},sel),el('td',{},saveBtn)]);
+  });
+  app.append(el('div',{class:'card'},[el('div',{class:'items-scroll'},[el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Waybill','Shipper → Consignee','Driver','Ready at','Close','Conf pcs','Conf wt','Status',''].map(h=>el('th',{},h)))),el('tbody',{},rows)])])]));};
+
+/* ================= forms hub (staff) ================= */
+views.forms=async()=>{const app=$('#app');const ships=await api('/api/shipments').catch(()=>[]);
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Forms'),el('p',{class:'sub'},'Printable house bills, invoices, labels & shipper declarations')])]));
+  app.append(el('div',{class:'card'},[el('h3',{},'Printable forms'),el('p',{class:'hint'},'Pick a waybill, then choose a form to print or save as PDF.'),
+    !ships.length?el('div',{class:'empty'},'No waybills yet.'):el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Waybill','Shipper → Consignee','Forms'].map(h=>el('th',{},h)))),el('tbody',{},ships.map(s=>el('tr',{},[
+      el('td',{},el('b',{},s.bl_number||('#'+s.id))),
+      el('td',{},[el('div',{style:'font-weight:600'},s.shipper_name||'—'),el('div',{class:'muted',style:'font-size:12px'},'→ '+(s.consignee_name||'—'))]),
+      el('td',{},el('div',{class:'row-actions'},[el('button',{class:'btn ghost sm',onclick:()=>openHouseBill(s.id)},'🚚 House bill'),el('button',{class:'btn ghost sm',onclick:()=>openInvoice(s.id)},'🧾 Invoice'),el('button',{class:'btn ghost sm',onclick:()=>openLabels(s.id)},'🏷 Labels'),el('button',{class:'btn ghost sm',onclick:()=>openDeclaration(s.id)},'📜 Declaration')]))
+    ])))])]));};
+function printShell(backView,node){const nav=$('#nav');if(nav)[...nav.children].forEach(b=>b.classList.remove('active'));const app=$('#app');app.innerHTML='';document.body.className='print-invoice';$('#pagestyle').textContent='@page{size:Letter;margin:12mm}';app.append(el('div',{class:'inv-toolbar'},[el('button',{class:'btn ghost',onclick:()=>{document.body.className='';$('#pagestyle').textContent='';go(backView);}},'← Back'),el('div',{style:'flex:1'}),el('button',{class:'btn primary',onclick:()=>window.print()},'🖨 Print / Save as PDF')]),node);}
+async function openHouseBill(id){let s;try{s=await api('/api/shipments/'+id);}catch(e){flash(e.message,true);return;}let st=settings;try{st=await api('/api/settings');}catch(e){}
+  const e=v=>v==null?'':String(v);const bl=s.bl_number||('NV'+String(s.id).padStart(6,'0'));
+  const doc=el('div',{class:'invoice hb'},[
+    el('div',{class:'hb-head'},[el('div',{},[el('div',{class:'inv-co-name'},e(st.company_name)),el('div',{class:'inv-co-addr'},e(st.company_address)),el('div',{class:'inv-co-addr'},e(st.company_phone))]),el('div',{style:'text-align:right'},[el('div',{class:'inv-title'},'HOUSE WAYBILL'),el('div',{class:'inv-num'},bl),el('div',{class:'inv-date'},'Date: '+e(s.pickup_date||(s.created_at||'').slice(0,10)))])]),
+    el('div',{class:'hb-grid'},[
+      el('div',{class:'hb-box'},[el('div',{class:'hb-lbl'},'Shipper (Pick Up From)'),el('div',{},e(s.shipper_name)),s.from_company?el('div',{},e(s.from_company)):null,s.from_address?el('div',{},e(s.from_address)):null,el('div',{},[s.from_city,s.from_state,s.from_zip].filter(Boolean).join(', ')),s.from_country?el('div',{},e(s.from_country)):null,s.shipper_phone?el('div',{},'Tel: '+e(s.shipper_phone)):null]),
+      el('div',{class:'hb-box'},[el('div',{class:'hb-lbl'},'Consignee (Deliver To)'),el('div',{},e(s.consignee_name)),s.to_company?el('div',{},e(s.to_company)):null,s.to_address?el('div',{},e(s.to_address)):null,el('div',{},[s.to_city,s.to_state,s.to_zip].filter(Boolean).join(', ')),s.to_country?el('div',{},e(s.to_country)):null,s.consignee_phone?el('div',{},'Tel: '+e(s.consignee_phone)):null]),
+    ]),
+    el('div',{class:'hb-meta'},[el('div',{},[el('b',{},'Origin: '),e(s.origin)||'—']),el('div',{},[el('b',{},'Destination: '),e(s.dest_port)||'—']),el('div',{},[el('b',{},'Pieces: '),String(s.total_pieces||0)]),el('div',{},[el('b',{},'Weight: '),String(s.total_weight||0)]),el('div',{},[el('b',{},'Service: '),e(s.service_request)||'—']),el('div',{},[el('b',{},'Payment: '),e(s.payment_method)||'—'])]),
+    el('table',{class:'inv-table'},[el('thead',{},el('tr',{},['Pieces','Description','Cubic','Weight'].map(h=>el('th',{},h)))),el('tbody',{},(s.items||[]).map(it=>el('tr',{},[el('td',{class:'num'},String(it.quantity)),el('td',{},[it.item_type,it.description].filter(Boolean).join(' · ')),el('td',{},it.pricing_mode==='flat'?'':`${it.volume_each} ${it.volume_unit}`),el('td',{},it.weight?String(it.weight):'')])))]),
+    s.special_instructions?el('div',{class:'hb-note'},[el('b',{},'Special instructions: '),e(s.special_instructions)]):null,
+    el('div',{class:'inv-foot'},[el('div',{},'Shipper signature'),el('div',{class:'ln'}),el('div',{},'Received by'),el('div',{class:'ln'}),el('div',{},'Date'),el('div',{class:'ln'})]),
+  ]);printShell('forms',doc);}
+async function openDeclaration(id){let s;try{s=await api('/api/shipments/'+id);}catch(e){flash(e.message,true);return;}let st=settings;try{st=await api('/api/settings');}catch(e){}
+  const e=v=>v==null?'':String(v);const bl=s.bl_number||('NV'+String(s.id).padStart(6,'0'));
+  const doc=el('div',{class:'invoice hb'},[
+    el('div',{style:'text-align:center;margin-bottom:14px'},[el('div',{class:'inv-title'},"SHIPPER'S DECLARATION"),el('div',{class:'muted'},'For export / international shipment · '+e(st.company_name))]),
+    el('div',{class:'hb-meta'},[el('div',{},[el('b',{},'Waybill: '),bl]),el('div',{},[el('b',{},'Date: '),e((s.created_at||'').slice(0,10))]),el('div',{},[el('b',{},'Destination: '),e(s.dest_port)||'—'])]),
+    el('div',{class:'hb-grid'},[el('div',{class:'hb-box'},[el('div',{class:'hb-lbl'},'Shipper'),el('div',{},e(s.shipper_name)),s.from_address?el('div',{},e(s.from_address)):null,el('div',{},[s.from_city,s.from_country].filter(Boolean).join(', '))]),el('div',{class:'hb-box'},[el('div',{class:'hb-lbl'},'Consignee'),el('div',{},e(s.consignee_name)),s.to_address?el('div',{},e(s.to_address)):null,el('div',{},[s.to_city,s.to_country].filter(Boolean).join(', '))])]),
+    el('table',{class:'inv-table'},[el('thead',{},el('tr',{},['Qty','Description of goods','Declared value'].map(h=>el('th',{},h)))),el('tbody',{},(s.items||[]).map(it=>el('tr',{},[el('td',{class:'num'},String(it.quantity)),el('td',{},[it.item_type,it.description].filter(Boolean).join(' · ')),el('td',{class:'num'},it.declared_value?money(it.declared_value):'')])))]),
+    el('div',{class:'inv-fine',style:'margin-top:14px'},'I hereby certify that the information contained in this declaration is true and correct and that the contents of this shipment are as stated above. The goods are shipped subject to the carrier’s terms and conditions of carriage.'),
+    el('div',{class:'inv-foot',style:'margin-top:24px'},[el('div',{},'Shipper signature'),el('div',{class:'ln'}),el('div',{},'Date'),el('div',{class:'ln'})]),
+  ]);printShell('forms',doc);}
+
+/* ================= accounting (staff) ================= */
+views.accounting=async()=>{const app=$('#app');
+  const [pays,ships,cls]=await Promise.all([api('/api/payments').catch(()=>[]),api('/api/shipments').catch(()=>[]),api('/api/clients').catch(()=>[])]);
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Accounting'),el('p',{class:'sub'},'Cash receipts, credit memos & A/R aging')]),el('button',{class:'btn primary',onclick:()=>paymentForm(cls)},'+ Add cash receipt')]));
+  const byClient={};cls.forEach(c=>byClient[c.id]={name:c.name,charge:0,paid:0,b:[0,0,0,0]});
+  const now=Date.now();
+  ships.forEach(s=>{const cid=s.owner_client_id||s.client_id;if(!cid||!byClient[cid])return;const amt=+s.total_charge||0;byClient[cid].charge+=amt;const t=Date.parse((s.created_at||'').replace(' ','T')+'Z');const days=isNaN(t)?0:(now-t)/86400000;const b=days<=30?0:days<=60?1:days<=90?2:3;byClient[cid].b[b]+=amt;});
+  pays.forEach(p=>{if(p.client_id&&byClient[p.client_id])byClient[p.client_id].paid+=(+p.amount||0);});
+  const agingRows=Object.values(byClient).filter(x=>x.charge||x.paid).map(x=>el('tr',{},[el('td',{},el('b',{},x.name)),el('td',{class:'num'},money(x.b[0])),el('td',{class:'num'},money(x.b[1])),el('td',{class:'num'},money(x.b[2])),el('td',{class:'num'},money(x.b[3])),el('td',{class:'num'},money(x.charge)),el('td',{class:'num'},money(x.paid)),el('td',{class:'num'},el('b',{},money(x.charge-x.paid)))]));
+  app.append(el('div',{class:'card'},[el('h3',{},'A/R Aging by customer'),agingRows.length?el('div',{class:'items-scroll'},[el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Customer','Current','31–60','61–90','90+','Charges','Paid','Balance'].map(h=>el('th',{},h)))),el('tbody',{},agingRows)])]):el('div',{class:'empty'},'No billing activity yet.')]));
+  const pr=pays.map(p=>el('tr',{},[el('td',{},p.pay_date||'—'),el('td',{},p.client_name||'—'),el('td',{},el('span',{class:'pill '+(p.kind==='credit'?'Draft':'Booked')},p.kind)),el('td',{},p.check_number||'—'),el('td',{class:'num'},money(p.amount)),el('td',{},p.invoice_ref||'—'),el('td',{},p.memo||'—'),el('td',{},el('button',{class:'btn danger sm',onclick:async()=>{if(confirm('Delete this entry?')){await api('/api/payments/'+p.id,{method:'DELETE'});go('accounting');}}},'✕'))]));
+  app.append(el('div',{class:'card'},[el('h3',{},'Cash receipts & credit memos'),pays.length?el('table',{class:'list-table'},[el('thead',{},el('tr',{},['Date','Customer','Type','Check #','Amount','Invoice','Memo',''].map(h=>el('th',{},h)))),el('tbody',{},pr)]):el('div',{class:'empty'},'No cash receipts recorded yet.')]));};
+function paymentForm(cls){const app=$('#app');app.innerHTML='';const F={};
+  const clientSel=el('select',{},[el('option',{value:''},'— Select customer —'),...cls.map(c=>el('option',{value:c.id},c.name))]);
+  const kindSel=el('select',{},[el('option',{value:'receipt'},'Cash receipt'),el('option',{value:'credit'},'Credit memo')]);
+  const f=(k,l,o={})=>{const i=el('input',{type:o.type||'text'});F[k]=i;if(o.val!=null)i.value=o.val;return el('div',{},[el('label',{},l),i]);};
+  app.append(el('div',{class:'toolbar'},[el('h2',{},'Add cash receipt / credit'),el('div',{class:'row-actions'},[el('button',{class:'btn ghost',onclick:()=>go('accounting')},'Cancel'),el('button',{class:'btn primary',onclick:doSave},'Save')])]));
+  app.append(el('div',{class:'card'},[el('div',{class:'grid g2'},[el('div',{},[el('label',{},'Customer'),clientSel]),el('div',{},[el('label',{},'Type'),kindSel])]),el('div',{class:'grid g3'},[f('pay_date','Date',{type:'date',val:new Date().toISOString().slice(0,10)}),f('check_number','Check #'),f('amount','Amount',{type:'number'})]),el('div',{class:'grid g2'},[f('invoice_ref','Invoice / waybill #'),f('memo','Memo')])]));
+  async function doSave(){const data={client_id:clientSel.value,kind:kindSel.value,pay_date:F.pay_date.value,check_number:F.check_number.value,amount:F.amount.value,invoice_ref:F.invoice_ref.value,memo:F.memo.value};if(!data.amount){flash('Enter an amount',true);return;}try{await api('/api/payments',{method:'POST',body:JSON.stringify(data)});flash('Saved');go('accounting');}catch(e){flash(e.message,true);}}}
+
+/* ================= reports (staff) ================= */
+views.reports=async()=>{const app=$('#app');
+  const [ships,cls,agents,pays]=await Promise.all([api('/api/shipments').catch(()=>[]),api('/api/clients').catch(()=>[]),api('/api/agents').catch(()=>[]),api('/api/payments').catch(()=>[])]);
+  app.append(el('div',{class:'toolbar'},[el('div',{},[el('h2',{},'Reports'),el('p',{class:'sub'},'Operational & financial reports')])]));
+  const menu=[['customers','Customer Listing'],['unfinished','Unfinished Waybills'],['cost','Cost Sheet'],['ledger','Customer Ledgers'],['agents','Agent Listing'],['declared','Declared Value'],['pod','P.O.D. Report']];
+  const content=el('div',{class:'card',style:'flex:1;min-width:0'});
+  const mkTable=(headers,rows,empty)=>rows.length?el('div',{class:'items-scroll'},[el('table',{class:'list-table'},[el('thead',{},el('tr',{},headers.map(h=>el('th',{},h)))),el('tbody',{},rows)])]):el('div',{class:'empty'},empty||'No data.');
+  const btns=menu.map(([k,l])=>el('button',{class:'btn ghost sm','data-rep':k,style:'display:block;width:100%;text-align:left;margin-bottom:4px',onclick:()=>show(k)},l));
+  function show(key){content.innerHTML='';btns.forEach(b=>b.classList.toggle('primary',b.dataset.rep===key));let node,title;
+    if(key==='customers'){title='Customer Listing';node=mkTable(['Name','Phone','Email','Location'],cls.map(c=>el('tr',{},[el('td',{},el('b',{},c.name)),el('td',{},c.phone||'—'),el('td',{},c.email||'—'),el('td',{},[c.city,c.country].filter(Boolean).join(', ')||'—')])),'No customers.');}
+    else if(key==='unfinished'){title='Unfinished Waybills';const u=ships.filter(s=>(s.status||'Draft')!=='Delivered');node=mkTable(['Waybill','Shipper → Consignee','Status','Pieces','Charge'],u.map(s=>el('tr',{},[el('td',{},s.bl_number||('#'+s.id)),el('td',{},(s.shipper_name||'—')+' → '+(s.consignee_name||'—')),el('td',{},el('span',{class:'pill '+(s.status||'Draft')},s.status||'Draft')),el('td',{},String(s.total_pieces||0)),el('td',{},money(s.total_charge))])),'Every waybill is delivered.');}
+    else if(key==='cost'){title='Cost Sheet';node=mkTable(['Waybill','Customer','Charges','Costs','Profit'],ships.map(s=>{const ch=+s.total_charge||0,co=+s.total_cost||0;return el('tr',{},[el('td',{},s.bl_number||('#'+s.id)),el('td',{},s.client_name||s.shipper_name||'—'),el('td',{class:'num'},money(ch)),el('td',{class:'num'},money(co)),el('td',{class:'num'},el('b',{},money(ch-co)))]);}),'No waybills.');}
+    else if(key==='ledger'){title='Customer Ledgers';const m={};cls.forEach(c=>m[c.id]={name:c.name,ch:0,pd:0});ships.forEach(s=>{const id=s.owner_client_id||s.client_id;if(m[id])m[id].ch+=+s.total_charge||0;});pays.forEach(p=>{if(m[p.client_id])m[p.client_id].pd+=+p.amount||0;});node=mkTable(['Customer','Charges','Payments','Balance'],Object.values(m).filter(x=>x.ch||x.pd).map(x=>el('tr',{},[el('td',{},el('b',{},x.name)),el('td',{class:'num'},money(x.ch)),el('td',{class:'num'},money(x.pd)),el('td',{class:'num'},el('b',{},money(x.ch-x.pd)))])),'No ledger activity.');}
+    else if(key==='agents'){title='Agent Listing';node=mkTable(['Agent','Location','City / State','Phone'],agents.map(a=>el('tr',{},[el('td',{},el('b',{},a.name)),el('td',{},a.location||'—'),el('td',{},[a.city,a.state].filter(Boolean).join(', ')||'—'),el('td',{},a.phone||'—')])),'No agents.');}
+    else if(key==='declared'){title='Declared Value';node=mkTable(['Waybill','Consignee','Declared value','Pieces'],ships.filter(s=>(+s.total_value)>0).map(s=>el('tr',{},[el('td',{},s.bl_number||('#'+s.id)),el('td',{},s.consignee_name||'—'),el('td',{class:'num'},money(s.total_value)),el('td',{},String(s.total_pieces||0))])),'No declared values recorded.');}
+    else if(key==='pod'){title='P.O.D. Report';node=mkTable(['Waybill','Consignee','Delivered','Signed by'],ships.filter(s=>s.status==='Delivered'||s.signed_by).map(s=>el('tr',{},[el('td',{},s.bl_number||('#'+s.id)),el('td',{},s.consignee_name||'—'),el('td',{},s.signed_date||s.ship_date||'—'),el('td',{},s.signed_by||'—')])),'No proof-of-delivery records yet.');}
+    content.append(el('h3',{},title),node);}
+  app.append(el('div',{class:'rep-wrap'},[el('div',{class:'card rep-menu'},[el('h3',{style:'margin-top:0'},'Reports'),...btns]),content]));
+  show('customers');};
 
 boot();
 </script>
