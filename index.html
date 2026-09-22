@@ -55,6 +55,30 @@
   .authwrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a,#1e3a8a);padding:20px}
   .authcard{background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:420px;padding:30px}
   .authcard .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;margin-bottom:4px}
+  .lp-back{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:0;margin-bottom:10px}
+  .lp-back:hover{color:var(--ink)}
+  /* landing / front page */
+  .lp{min-height:100vh;background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff}
+  .lp-top{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;max-width:1080px;margin:0 auto}
+  .lp-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
+  .lp-brand .badge{background:var(--brand);color:#fff;border-radius:8px;padding:4px 9px;font-size:13px}
+  .lp-signin{background:rgba(255,255,255,.14);color:#fff;border:0;padding:9px 16px;border-radius:9px;cursor:pointer;font-weight:600}
+  .lp-signin:hover{background:rgba(255,255,255,.24)}
+  .lp-hero{max-width:820px;margin:0 auto;text-align:center;padding:54px 20px 34px}
+  .lp-hero h1{font-size:42px;line-height:1.08;margin:0 0 14px;font-weight:800}
+  .lp-sub{font-size:18px;color:#cbd5e1;margin:0 0 30px}
+  .lp-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .lp-big{font-size:17px;padding:15px 28px;border-radius:12px}
+  .lp-ghostbig{font-size:17px;padding:15px 28px;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;border:0;cursor:pointer;font-weight:600}
+  .lp-ghostbig:hover{background:rgba(255,255,255,.22)}
+  .lp-note{color:#94a3b8;font-size:13px;margin-top:18px}
+  .lp-steps{max-width:1000px;margin:20px auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:0 20px}
+  @media(max-width:720px){.lp-steps{grid-template-columns:1fr}.lp-hero h1{font-size:30px}}
+  .lp-step{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:20px}
+  .lp-step .n{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .lp-step h3{margin:0 0 6px;font-size:16px;color:#fff;text-transform:none;letter-spacing:0}
+  .lp-step p{margin:0;color:#cbd5e1;font-size:14px}
+  .lp-foot{max-width:1000px;margin:26px auto;padding:20px;text-align:center;color:#94a3b8;font-size:14px;border-top:1px solid rgba(255,255,255,.12)}
   .authcard .brand .badge{background:var(--brand);color:#fff;border-radius:8px;padding:4px 9px;font-size:13px}
   .tabs{display:flex;gap:6px;margin:18px 0}.tabs button{flex:1;padding:9px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;font-weight:600;color:var(--muted)}
   .tabs button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
@@ -121,6 +145,7 @@ let settings={default_barrel_rate:75,default_volume_rate:8,currency:'USD'};
 const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:settings.currency||'USD'}).format(Number(n)||0);
 const flash=(m,err=false)=>{const f=$('#flash');f.textContent=m;f.className='flash show'+(err?' err':'');setTimeout(()=>f.className='flash',2400);};
 let ME=null,clients=[];
+let BRAND=null,pendingIntent=null;
 const isStaff=()=>ME&&ME.user.role==='staff';
 
 /* ================= pricing ================= */
@@ -130,10 +155,46 @@ function priceRow(it){const qty=Math.max(0,Math.min(100,+it.quantity||0));const 
 /* ================= boot ================= */
 async function boot(){
   try{const r=await api('/api/me');ME=r.user?r:null;}catch(e){ME=null;}
-  if(!ME){renderAuth();return;}
+  if(!ME){ try{BRAND=await api('/api/branding');}catch(e){} renderLanding(); return; }
   try{settings=await api('/api/settings');}catch(e){}
   if(isStaff()){try{clients=await api('/api/clients');}catch(e){}}
   renderApp();
+  if(pendingIntent){const pi=pendingIntent;pendingIntent=null;go(pi);}
+}
+
+/* ================= landing / front page ================= */
+function renderLanding(){
+  document.body.className='';
+  const root=$('#root');root.innerHTML='';
+  const b=BRAND||{};
+  const name=b.company_name||'Freight CRM';
+  const step=(n,h,p)=>el('div',{class:'lp-step'},[el('div',{class:'n'},n),el('h3',{},h),el('p',{},p)]);
+  const startSchedule=()=>{pendingIntent='intake';renderAuth('register');};
+  const contact=[];
+  if(b.company_phone)contact.push('📞 '+b.company_phone);
+  if(b.company_email)contact.push('✉ '+b.company_email);
+  if(b.company_address)contact.push('📍 '+b.company_address);
+  root.append(el('div',{class:'lp'},[
+    el('div',{class:'lp-top'},[
+      el('div',{class:'lp-brand'},[el('span',{class:'badge'},'NVOCC'),name]),
+      el('button',{class:'lp-signin',onclick:()=>renderAuth('login')},'Sign in'),
+    ]),
+    el('div',{class:'lp-hero'},[
+      el('h1',{},'Ship your barrels & boxes — booked in a minute'),
+      el('p',{class:'lp-sub'},b.company_tagline||'To the Caribbean & the rest of the world'),
+      el('div',{class:'lp-cta'},[
+        el('button',{class:'btn primary lp-big',onclick:startSchedule},'📦 Schedule a Pickup'),
+        el('button',{class:'lp-ghostbig',onclick:()=>renderAuth('login')},'🔍 Track my shipment'),
+      ]),
+      el('p',{class:'lp-note'},'New here? Tap “Schedule a Pickup” — set up takes about a minute.'),
+    ]),
+    el('div',{class:'lp-steps'},[
+      step('1','Create your account','A quick sign-up with your name and contact details.'),
+      step('2','Schedule your pickup','Choose your pickup date, add your barrels & boxes, and see the price instantly.'),
+      step('3','Track, print & go','Get a booking number, a printable invoice, and barcode labels for every piece.'),
+    ]),
+    contact.length?el('div',{class:'lp-foot'},[el('div',{},contact.join('   ·   ')),el('div',{style:'margin-top:6px;opacity:.7'},'© '+name)]):null,
+  ]));
 }
 
 /* ================= auth screen ================= */
@@ -159,9 +220,13 @@ function renderAuth(mode='login'){
     el('button',{class:mode==='login'?'active':'',onclick:()=>renderAuth('login')},'Sign in'),
     el('button',{class:mode==='register'?'active':'',onclick:()=>renderAuth('register')},'New customer'),
   ]);
+  const scheduling = pendingIntent==='intake';
+  const sub = mode==='login' ? 'Sign in to manage or track your shipments.'
+            : (scheduling ? 'Create your account to schedule your pickup — you’ll go straight to the booking form.' : 'Register to book and track your shipments.');
   root.append(el('div',{class:'authwrap'},[el('div',{class:'authcard'},[
-    el('div',{class:'brand'},[el('span',{class:'badge'},'NVOCC'),'Freight CRM']),
-    el('p',{class:'sub'},mode==='login'?'Sign in to manage or track your shipments.':'Register to book and track your shipments.'),
+    el('button',{class:'lp-back',onclick:renderLanding},'← Back to home'),
+    el('div',{class:'brand'},[el('span',{class:'badge'},'NVOCC'),BRAND&&BRAND.company_name?BRAND.company_name:'Freight CRM']),
+    el('p',{class:'sub'},sub),
     tabs, body,
     el('p',{class:'hint',style:'margin-top:14px'},mode==='login'?'Customers: use “New customer” to register. Staff: use the login your office set up.':'Already have an account? Choose “Sign in”.'),
   ])]));

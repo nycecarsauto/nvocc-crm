@@ -118,6 +118,11 @@ async function api(req, res, pathname, method) {
     auth.destroySession(cookies.sid);
     return sendJSON(res, 200, { ok: true }, { 'Set-Cookie': auth.cookieHeader('', true) });
   }
+  /* public branding for the landing page (no login required) */
+  if (resource === 'branding' && method === 'GET') {
+    const s = db.prepare('SELECT company_name, company_tagline, company_agent, company_address, company_phone, company_email, currency FROM settings WHERE id=1').get();
+    return sendJSON(res, 200, s || {});
+  }
 
   /* -------- everything below requires login -------- */
   if (!me) return sendJSON(res, 401, { error: 'Please sign in' });
