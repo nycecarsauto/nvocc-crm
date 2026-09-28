@@ -35,7 +35,8 @@ function serveStatic(req, res, urlPath) {
   const filePath = path.join(__dirname, rel);
   fs.readFile(filePath, (err, buf) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream' });
+    // Always revalidate so browsers pick up new deploys immediately (no stale UI).
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream', 'Cache-Control': 'no-cache, must-revalidate' });
     res.end(buf);
   });
 }
