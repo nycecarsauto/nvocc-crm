@@ -248,13 +248,14 @@ function renderAuth(mode='login'){
   // Build ONLY the active form so F maps to the inputs actually on screen.
   const body=el('div',{});
   if(mode==='login'){
-    body.append(el('div',{},[field('username','Username'),field('password','Password','password'),
+    body.append(el('div',{},[field('username','Phone number or username'),field('password','Password','password'),
       el('button',{class:'btn primary',style:'width:100%;margin-top:6px',onclick:doLogin},'Sign in')]));
   }else{
     body.append(el('div',{},[
-      el('div',{class:'grid g2'},[field('name','Full name'),field('phone','Phone')]),
+      el('div',{class:'grid g2'},[field('name','Full name'),field('phone','Phone number')]),
+      el('p',{class:'hint',style:'margin:-4px 0 8px'},'Your phone number is your username — you’ll use it to sign in.'),
       field('email','Email','email'),
-      el('div',{class:'grid g2'},[field('username','Choose a username'),field('password','Choose a password','password')]),
+      field('password','Choose a password','password'),
       el('button',{class:'btn primary',style:'width:100%;margin-top:6px',onclick:doRegister},'Create account'),
     ]));
   }
@@ -270,10 +271,10 @@ function renderAuth(mode='login'){
     el('div',{class:'brand'},[el('span',{class:'badge'},'NVOCC'),BRAND&&BRAND.company_name?BRAND.company_name:'Freight CRM']),
     el('p',{class:'sub'},sub),
     tabs, body,
-    el('p',{class:'hint',style:'margin-top:14px'},mode==='login'?'Customers: use “New customer” to register. Staff: use the login your office set up.':'Already have an account? Choose “Sign in”.'),
+    el('p',{class:'hint',style:'margin-top:14px'},mode==='login'?'Customers: sign in with your phone number and password. Staff: use the login your office set up.':'Already have an account? Choose “Sign in”.'),
   ])]));
   async function doLogin(){try{const r=await api('/api/login',{method:'POST',body:JSON.stringify({username:F.username.value,password:F.password.value})});await boot();flash('Welcome back');}catch(e){flash(e.message,true);}}
-  async function doRegister(){try{await api('/api/register',{method:'POST',body:JSON.stringify({username:F.username.value,password:F.password.value,name:F.name.value,phone:F.phone.value,email:F.email.value})});await boot();flash('Account created');}catch(e){flash(e.message,true);}}
+  async function doRegister(){const uname=(F.phone.value||'').trim();if(!uname){flash('Enter your phone number — it is your username',true);return;}try{await api('/api/register',{method:'POST',body:JSON.stringify({username:uname,password:F.password.value,name:F.name.value,phone:uname,email:F.email.value})});await boot();flash('Account created');}catch(e){flash(e.message,true);}}
 }
 
 /* ================= app shell ================= */
@@ -567,9 +568,14 @@ views.accounts=async()=>{const app=$('#app');const users=await api('/api/users')
 function accountForm(){const app=$('#app');app.innerHTML='';const F={};
   const f=(k,l,type='text')=>{const i=el('input',{type});F[k]=i;return el('div',{},[el('label',{},l),i]);};
   const roleSel=el('select',{},[el('option',{value:'customer'},'Customer'),el('option',{value:'staff'},'Staff')]);
+  const unameRow=f('username','Username');
+  const hint=el('p',{class:'hint'},'A customer signs in with their phone number as their username, and gets a linked client record automatically.');
+  const sync=()=>{unameRow.style.display=roleSel.value==='customer'?'none':'';};
+  roleSel.addEventListener('change',sync);
   app.append(el('div',{class:'toolbar'},[el('h2',{},'Add account'),el('div',{class:'row-actions'},[el('button',{class:'btn ghost',onclick:()=>go('accounts')},'Cancel'),el('button',{class:'btn primary',onclick:doSave},'Create account')])]));
-  app.append(el('div',{class:'card'},[el('div',{class:'grid g2'},[el('div',{},[el('label',{},'Role'),roleSel]),f('name','Full name')]),el('div',{class:'grid g2'},[f('username','Username'),f('password','Password','password')]),el('div',{class:'grid g2'},[f('phone','Phone (customer)'),f('email','Email (customer)')]),el('p',{class:'hint'},'A customer account automatically gets a linked client record so their shipments are tied to them.')]));
-  async function doSave(){try{await api('/api/users',{method:'POST',body:JSON.stringify({role:roleSel.value,name:F.name.value,username:F.username.value,password:F.password.value,phone:F.phone.value,email:F.email.value})});flash('Account created');go('accounts');}catch(e){flash(e.message,true);}}}
+  app.append(el('div',{class:'card'},[el('div',{class:'grid g2'},[el('div',{},[el('label',{},'Role'),roleSel]),f('name','Full name')]),el('div',{class:'grid g2'},[unameRow,f('password','Password','password')]),el('div',{class:'grid g2'},[f('phone','Phone (customer login)'),f('email','Email (customer)')]),hint]));
+  sync();
+  async function doSave(){const cust=roleSel.value==='customer';const username=cust?(F.phone.value||'').trim():(F.username.value||'').trim();if(cust&&!username){flash('Enter the customer phone number — it is used as their username',true);return;}if(!cust&&!username){flash('Enter a username',true);return;}try{await api('/api/users',{method:'POST',body:JSON.stringify({role:roleSel.value,name:F.name.value,username,password:F.password.value,phone:F.phone.value,email:F.email.value})});flash('Account created');go('accounts');}catch(e){flash(e.message,true);}}}
 
 /* ================= profile (customer) ================= */
 views.profile=async()=>{const app=$('#app');const c=ME.client||{};const F={};
