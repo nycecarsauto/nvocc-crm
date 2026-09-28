@@ -417,12 +417,12 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
 
   // items
   const tbody=el('tbody');const totalsBar=el('div',{class:'totals'});const itemsState=[];
-  function addItem(type){itemsState.push(type==='barrel'?{item_type:'barrel',pricing_mode:'flat',rate:settings.default_barrel_rate,dim_unit:'in',weight_unit:'lb',quantity:1}:{item_type:type,pricing_mode:'volume',rate:settings.default_volume_rate,dim_unit:'in',weight_unit:'lb',quantity:1});renderItems();}
+  function addItem(type){itemsState.push(type==='barrel'?{item_type:'barrel',pricing_mode:'flat',rate:settings.default_barrel_rate,dim_unit:'in',weight_unit:'lb',quantity:1}:{item_type:type,pricing_mode:'volume',rate:'',dim_unit:'in',weight_unit:'lb',quantity:1});renderItems();}
   function renderItems(){tbody.innerHTML='';itemsState.forEach((it,idx)=>tbody.append(itemRow(it,idx)));recompute();}
   function itemRow(it,idx){const isFlat=it.pricing_mode==='flat';
     const bind=(key,attrs={})=>{const inp=el('input',{value:it[key]??'',...attrs});inp.addEventListener('input',()=>{it[key]=inp.value;if(['length','width','height','rate','quantity','dim_unit'].includes(key))recompute();});return inp;};
     const typeSel=el('select',{},['barrel','box','commercial bin','other'].map(t=>el('option',{value:t,selected:t===it.item_type?'selected':null},t)));
-    typeSel.addEventListener('change',()=>{it.item_type=typeSel.value;it.pricing_mode=typeSel.value==='barrel'?'flat':'volume';it.rate=typeSel.value==='barrel'?settings.default_barrel_rate:settings.default_volume_rate;renderItems();});
+    typeSel.addEventListener('change',()=>{it.item_type=typeSel.value;it.pricing_mode=typeSel.value==='barrel'?'flat':'volume';it.rate=typeSel.value==='barrel'?settings.default_barrel_rate:'';renderItems();});
     const unitSel=el('select',{},['in','cm'].map(u=>el('option',{value:u,selected:u===it.dim_unit?'selected':null},u)));
     unitSel.addEventListener('change',()=>{it.dim_unit=unitSel.value;recompute();});
     const p=priceRow(it);const dc=isFlat?'barreldim':'';
@@ -436,16 +436,16 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
       el('td',{},bind('weight',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'ea'})),
       el('td',{},bind('declared_value',{type:'number',min:0,step:'0.01',class:'cell-sm',placeholder:'$ ea'})),
       el('td',{},bind('rate',{type:'number',min:0,step:'0.01',class:'cell-sm'})),
-      el('td',{},el('b',{'data-charge':idx},money(p.charge))),
+      el('td',{},el('b',{'data-charge':idx,title:isFlat?'':'Measured & priced at pick-up'},(isFlat||(+it.rate>0))?money(p.charge):'—')),
       el('td',{},el('button',{class:'btn danger sm',onclick:()=>{itemsState.splice(idx,1);renderItems();}},'✕'))]);}
-  function recompute(){let pieces=0,weight=0,value=0,charge=0;itemsState.forEach((it,idx)=>{const p=priceRow(it);const q=Math.max(0,Math.min(100,+it.quantity||0));pieces+=q;weight+=(+it.weight||0)*q;value+=(+it.declared_value||0)*q;charge+=p.charge;const cell=tbody.querySelector(`[data-charge="${idx}"]`);if(cell)cell.textContent=money(p.charge);const vcell=tbody.querySelector(`[data-vol="${idx}"]`);if(vcell)vcell.textContent=it.pricing_mode==='flat'?'flat':`${p.volume} ${p.unit}`;});totalsBar.innerHTML='';totalsBar.append(chip('Pieces',pieces),chip('Weight',weight.toFixed(1)),chip('Declared value',money(value)),chip('Total charge',money(charge)));
+  function recompute(){let pieces=0,weight=0,value=0,charge=0,tbd=false;itemsState.forEach((it,idx)=>{const p=priceRow(it);const q=Math.max(0,Math.min(100,+it.quantity||0));pieces+=q;weight+=(+it.weight||0)*q;value+=(+it.declared_value||0)*q;const priced=(it.pricing_mode==='flat'||(+it.rate>0));if(priced)charge+=p.charge;else if(q>0)tbd=true;const cell=tbody.querySelector(`[data-charge="${idx}"]`);if(cell)cell.textContent=priced?money(p.charge):'—';const vcell=tbody.querySelector(`[data-vol="${idx}"]`);if(vcell)vcell.textContent=it.pricing_mode==='flat'?'flat':`${p.volume} ${p.unit}`;});totalsBar.innerHTML='';totalsBar.append(chip('Pieces',pieces),chip('Weight',weight.toFixed(1)),chip('Declared value',money(value)),chip('Total charge',money(charge)+(tbd?' +TBD':'')));
     if(chargesEl)chargesEl.textContent=money(charge);
     if(profitEl){const cost=+((F.total_cost&&F.total_cost.value)||0)||0;profitEl.textContent=money(charge-cost);}}
   const chip=(l,v)=>el('div',{class:'totchip'},[el('b',{},String(v)),el('span',{},l)]);
   (s.items||[]).forEach(it=>itemsState.push({...it}));
   form.append(el('div',{class:'card'},[el('div',{class:'toolbar'},[el('h3',{style:'margin:0'},'Items being sent'),
     el('div',{class:'row-actions'},[el('button',{class:'btn ghost sm',onclick:()=>addItem('barrel')},'＋ Barrel'),el('button',{class:'btn ghost sm',onclick:()=>addItem('box')},'＋ Box'),el('button',{class:'btn ghost sm',onclick:()=>addItem('commercial bin')},'＋ Commercial bin'),el('button',{class:'btn ghost sm',onclick:()=>addItem('other')},'＋ Other')])]),
-    el('p',{class:'hint',style:'margin-top:-4px'},'Barrels are priced at a flat rate each. Boxes / other are priced by volume (L×W×H → ft³ for inches, CBM for cm). Quantity 1–100 per line.'),
+    el('p',{class:'hint',style:'margin-top:-4px'},'Barrels are a flat rate each and priced now. Boxes, commercial bins & other are measured and priced at pick-up, so their charge is left blank (“—”) until then. Add dimensions and quantity so we can quote them. Quantity 1–100 per line.'),
     el('div',{class:'items-wrap'},[el('div',{class:'items-scroll'},[el('table',{},[el('thead',{},el('tr',{},['Type','Description','Qty','L','W','H','Unit','Volume','Wt (ea)','Value (ea)','Rate','Line charge',''].map(h=>el('th',{},h)))),tbody])])]),totalsBar]));
   renderItems();app.append(form);
 
