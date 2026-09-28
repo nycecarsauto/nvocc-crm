@@ -39,7 +39,7 @@
   thead th{position:sticky;top:0;background:#f8fafc;text-align:left;padding:10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--line);z-index:2}
   tbody td{padding:7px 8px;border-bottom:1px solid #eef2f7;vertical-align:middle} tbody tr:hover{background:#fafcff}
   td input,td select{padding:7px 8px;font-size:13px}.cell-sm{width:74px}.cell-xs{width:58px}
-  .type-barrel{border-left:3px solid var(--warn)}.type-box{border-left:3px solid var(--brand)}.type-other{border-left:3px solid var(--accent)}
+  .type-barrel{border-left:3px solid var(--warn)}.type-box{border-left:3px solid var(--brand)}.type-bin{border-left:3px solid #7c3aed}.type-other{border-left:3px solid var(--accent)}
   .muted{color:var(--muted)}
   /* waybill */
   .waybill-head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;border-radius:14px;padding:16px 22px;margin-bottom:16px;box-shadow:var(--shadow)}
@@ -423,13 +423,13 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
   function renderItems(){tbody.innerHTML='';itemsState.forEach((it,idx)=>tbody.append(itemRow(it,idx)));recompute();}
   function itemRow(it,idx){const isFlat=it.pricing_mode==='flat';
     const bind=(key,attrs={})=>{const inp=el('input',{value:it[key]??'',...attrs});inp.addEventListener('input',()=>{it[key]=inp.value;if(['length','width','height','rate','quantity','dim_unit'].includes(key))recompute();});return inp;};
-    const typeSel=el('select',{},['barrel','box','other'].map(t=>el('option',{value:t,selected:t===it.item_type?'selected':null},t)));
+    const typeSel=el('select',{},['barrel','box','commercial bin','other'].map(t=>el('option',{value:t,selected:t===it.item_type?'selected':null},t)));
     typeSel.addEventListener('change',()=>{it.item_type=typeSel.value;it.pricing_mode=typeSel.value==='barrel'?'flat':'volume';it.rate=typeSel.value==='barrel'?settings.default_barrel_rate:settings.default_volume_rate;renderItems();});
     const unitSel=el('select',{},['in','cm'].map(u=>el('option',{value:u,selected:u===it.dim_unit?'selected':null},u)));
     unitSel.addEventListener('change',()=>{it.dim_unit=unitSel.value;recompute();});
     const p=priceRow(it);const dc=isFlat?'barreldim':'';
-    return el('tr',{class:'type-'+(it.item_type==='barrel'?'barrel':it.item_type==='box'?'box':'other')},[
-      el('td',{},typeSel),el('td',{},bind('description',{placeholder:it.item_type==='barrel'?'Barrel contents':'Box contents',style:'width:150px'})),
+    return el('tr',{class:'type-'+(it.item_type==='barrel'?'barrel':it.item_type==='box'?'box':it.item_type==='commercial bin'?'bin':'other')},[
+      el('td',{},typeSel),el('td',{},bind('description',{placeholder:(it.item_type==='barrel'?'Barrel':it.item_type==='commercial bin'?'Bin':it.item_type==='box'?'Box':'Item')+' contents',style:'width:150px'})),
       el('td',{},bind('quantity',{type:'number',min:1,max:100,class:'cell-xs'})),
       el('td',{class:dc},bind('length',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'L'})),
       el('td',{class:dc},bind('width',{type:'number',min:0,step:'0.1',class:'cell-sm',placeholder:'W'})),
@@ -446,7 +446,7 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
   const chip=(l,v)=>el('div',{class:'totchip'},[el('b',{},String(v)),el('span',{},l)]);
   (s.items||[]).forEach(it=>itemsState.push({...it}));
   form.append(el('div',{class:'card'},[el('div',{class:'toolbar'},[el('h3',{style:'margin:0'},'Items being sent'),
-    el('div',{class:'row-actions'},[el('button',{class:'btn ghost sm',onclick:()=>addItem('barrel')},'＋ Barrel'),el('button',{class:'btn ghost sm',onclick:()=>addItem('box')},'＋ Box'),el('button',{class:'btn ghost sm',onclick:()=>addItem('other')},'＋ Other')])]),
+    el('div',{class:'row-actions'},[el('button',{class:'btn ghost sm',onclick:()=>addItem('barrel')},'＋ Barrel'),el('button',{class:'btn ghost sm',onclick:()=>addItem('box')},'＋ Box'),el('button',{class:'btn ghost sm',onclick:()=>addItem('commercial bin')},'＋ Commercial bin'),el('button',{class:'btn ghost sm',onclick:()=>addItem('other')},'＋ Other')])]),
     el('p',{class:'hint',style:'margin-top:-4px'},'Barrels are priced at a flat rate each. Boxes / other are priced by volume (L×W×H → ft³ for inches, CBM for cm). Quantity 1–100 per line.'),
     el('div',{class:'items-wrap'},[el('div',{class:'items-scroll'},[el('table',{},[el('thead',{},el('tr',{},['Type','Description','Qty','L','W','H','Unit','Volume','Wt (ea)','Value (ea)','Rate','Line charge',''].map(h=>el('th',{},h)))),tbody])])]),totalsBar]));
   renderItems();app.append(form);
