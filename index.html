@@ -325,7 +325,8 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
       el('button',{class:'btn ghost',onclick:()=>go('shipments')},'Cancel'),
       el('button',{class:'btn primary',onclick:doSave},'Save shipment')])]));
   const F={};
-  const field=(name,label,opts={})=>{const input=opts.type==='textarea'?el('textarea',{}):opts.options?el('select',{},opts.options.map(o=>el('option',{value:o},o))):el('input',{type:opts.type||'text',placeholder:opts.ph||''});F[name]=input;if(s[name]!=null)input.value=s[name];if(opts.ro)input.setAttribute('disabled','');return el('div',{},[el('label',{},label),input,opts.hint?el('div',{class:'hint'},opts.hint):null]);};
+  const tomorrow=new Date(Date.now()+864e5).toISOString().slice(0,10);
+  const field=(name,label,opts={})=>{const input=opts.type==='textarea'?el('textarea',{}):opts.options?el('select',{},opts.options.map(o=>el('option',{value:o},o))):el('input',{type:opts.type||'text',placeholder:opts.ph||''});F[name]=input;if(s[name]!=null)input.value=s[name];if(opts.ro)input.setAttribute('disabled','');if(opts.min)input.setAttribute('min',opts.min);return el('div',{},[el('label',{},label),input,opts.hint?el('div',{class:'hint'},opts.hint):null]);};
 
   // staff: client link + owner; customer: prefilled shipper from profile
   let clientSel=null, chargesEl=null, profitEl=null;
@@ -400,8 +401,8 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
         field('from_address','Street address',{ph:'House / street'}),
         el('div',{class:'grid g2'},[field('from_city','City'),field('from_state','State / Region')]),
         el('div',{class:'grid g2'},[field('from_zip','Postal code'),field('from_country','Country')]),
-        el('div',{class:'grid g2 wb-when'},[field('pickup_date','Pick-up date',{type:'date'}),field('pickup_time','Pick-up time',{options:['','Morning (8am–12pm)','Afternoon (12pm–5pm)','Evening (5pm–8pm)','Anytime']})]),
-        el('p',{class:'hint'},'Choose the date and time window you would like your barrels / boxes collected.')]),
+        el('div',{class:'grid g2 wb-when'},[field('pickup_date','Pick-up date',{type:'date',min:tomorrow}),field('pickup_time','Pick-up time',{options:['','Morning (8am–12pm)','Afternoon (12pm–5pm)','Evening (5pm–8pm)','Anytime']})]),
+        el('p',{class:'hint'},'Choose the date and time window you would like your barrels / boxes collected. Pick-ups are scheduled for the next day or later — no same-day pick-ups.')]),
       el('div',{class:'card wb-box wb-to'},[el('h3',{},[el('span',{class:'wb-tag'},'B'),'Deliver To']),
         el('div',{class:'grid g2'},[field('consignee_first','First name'),field('consignee_last','Last name')]),
         el('div',{class:'grid g2'},[field('consignee_phone','Phone',{type:'tel'}),field('consignee_email','Email',{type:'email'})]),
@@ -409,12 +410,9 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
         el('div',{class:'grid g2'},[field('to_city','City / Town'),field('to_state','State / Region')]),
         el('div',{class:'grid g2'},[field('to_zip','Postal code'),field('to_country','Country')]),
         field('dest_port','Destination port',{ph:'e.g. Kingston, Georgetown, St George'})])]));
-    form.append(el('div',{class:'card'},[el('h3',{},'Office use — tracking'),el('div',{class:'grid g3'},[
-      field('bl_number','BL / Booking #',{ro:true}),
-      statusReadonly(s.status),
-      field('ship_date','Ship date',{type:'date',ro:true,hint:'Set by the office once booked.'})]),
-      el('p',{class:'hint'},'The booking number, ship date and status are filled in by the shipping office after you book.'),
-      field('notes','Special instructions / notes',{type:'textarea'})]));
+    form.append(el('div',{class:'card'},[el('h3',{},'Special instructions / notes'),
+      field('notes','Anything the office should know about this pickup',{type:'textarea'}),
+      el('p',{class:'hint'},'Your booking number and status will be assigned by the shipping office after you book.')]));
   }
 
   // items
@@ -459,6 +457,7 @@ views.intake=(shipment)=>{const app=$('#app');const s=shipment?JSON.parse(JSON.s
     if(staff){payload.status=F.status?F.status.value:'Draft';payload.client_id=F._client&&F._client.value?Number(F._client.value):null;payload.owner_client_id=payload.client_id;}
     payload.items=itemsState;
     if(!payload.shipper_name&&!payload.consignee_name){flash('Add a shipper or consignee name',true);return;}
+    if(mine&&payload.pickup_date&&payload.pickup_date<tomorrow){flash('Pick-up must be the next day or later — no same-day pick-ups',true);return;}
     try{const saved=editing?await api('/api/shipments/'+s.id,{method:'PUT',body:JSON.stringify(payload)}):await api('/api/shipments',{method:'POST',body:JSON.stringify(payload)});flash('Shipment #'+saved.id+' saved · '+money(saved.total_charge));go('shipments');}catch(e){flash(e.message,true);}}
 };
 async function saveShipperAsClient(F,sel){const name=[F.shipper_first.value,F.shipper_last.value].filter(Boolean).join(' ').trim();if(!name){flash('Enter the shipper name first',true);return;}try{const c=await api('/api/clients',{method:'POST',body:JSON.stringify({name,phone:F.shipper_phone.value,email:F.shipper_email.value,address:F.from_address.value,city:F.from_city.value,country:F.from_country.value})});clients.push(c);if(sel){sel.append(el('option',{value:c.id},c.name));sel.value=c.id;}flash('Saved '+name+' to clients');}catch(e){flash(e.message,true);}}
